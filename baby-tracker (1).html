@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>👶 Baby Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Baby Tracker">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --cream:#FFF8F0;--soft-peach:#FFE8D6;--warm-sand:#F5DEC8;--blush:#F2A97E;
+    --terra:#D4784A;--deep:#3D2314;--sage:#8BAF8B;--sage-light:#C5DCC5;
+    --sky-light:#D6EAF8;--lavender:#C5B8E8;--gold:#E8C86A;--white:#FFFFFF;
+    --shadow:rgba(61,35,20,0.12);--shadow-strong:rgba(61,35,20,0.22);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);min-height:100vh;padding-bottom:80px;}
+
+  .sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:6px;background:#4CAF50;transition:background 0.3s;}
+  .sync-dot.syncing{background:var(--gold);animation:pulse 0.8s infinite;}
+  .sync-dot.offline{background:#ccc;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+  .header{background:linear-gradient(135deg,var(--terra) 0%,var(--blush) 100%);padding:28px 20px 20px;position:relative;overflow:hidden;}
+  .header::before{content:'';position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.08);top:-60px;right:-40px;}
+  .header::after{content:'';position:absolute;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.06);bottom:-30px;left:30px;}
+  .header-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1;}
+  .header h1{font-family:'DM Serif Display',serif;font-size:28px;color:white;line-height:1.1;display:flex;align-items:center;}
+  .header-sub{font-size:13px;color:rgba(255,255,255,0.75);margin-top:2px;font-weight:300;}
+  .date-nav{display:flex;align-items:center;gap:10px;margin-top:16px;position:relative;z-index:1;}
+  .date-btn{background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .date-label{font-size:14px;color:white;font-weight:500;flex:1;text-align:center;}
+  .today-btn{background:rgba(255,255,255,0.2);border:none;color:white;padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+  .summary-strip{background:white;margin:0 16px;border-radius:16px;padding:14px 16px;margin-top:-14px;box-shadow:0 4px 20px var(--shadow);display:grid;grid-template-columns:repeat(4,1fr);gap:8px;position:relative;z-index:2;}
+  .stat-cell{text-align:center;}
+  .stat-val{font-family:'DM Serif Display',serif;font-size:20px;color:var(--terra);line-height:1;}
+  .stat-label{font-size:10px;color:#999;margin-top:2px;font-weight:500;text-transform:uppercase;letter-spacing:0.3px;}
+  .stat-divider{width:1px;background:var(--soft-peach);align-self:stretch;}
+
+  .section{padding:16px;}
+  .section-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--deep);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+
+  .wake-sleep-card{background:linear-gradient(135deg,var(--sky-light),var(--sage-light));border-radius:14px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .ws-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;}
+  .ws-icon{font-size:24px;}
+  .ws-time{font-family:'DM Serif Display',serif;font-size:18px;color:var(--deep);}
+  .ws-label{font-size:11px;color:#666;}
+  .night-sleep-info{text-align:center;font-size:12px;color:var(--sage);font-weight:500;}
+
+  .feed-list{display:flex;flex-direction:column;gap:10px;}
+  .feed-card{background:white;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 12px var(--shadow);transition:transform 0.15s;}
+  .feed-time-pill{background:var(--soft-peach);color:var(--terra);border-radius:10px;padding:6px 10px;font-family:'DM Serif Display',serif;font-size:17px;min-width:62px;text-align:center;flex-shrink:0;}
+  .feed-info{flex:1;}
+  .feed-ml{font-size:16px;font-weight:600;color:var(--deep);}
+  .feed-tags{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap;}
+  .tag{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;}
+  .tag-vitD{background:var(--gold);color:#5a4200;}
+  .tag-flat{background:var(--sage-light);color:#2d4d2d;}
+  .feed-actions{display:flex;gap:6px;}
+  .icon-btn{background:var(--cream);border:none;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background 0.2s;}
+  .icon-btn:hover{background:var(--soft-peach);}
+  .icon-btn.delete:hover{background:#ffe0de;}
+
+  .nap-card{background:linear-gradient(135deg,#EDE5F8,#d8ccf0);border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 12px var(--shadow);}
+  .nap-icon{font-size:22px;}
+  .nap-info{flex:1;}
+  .nap-duration{font-family:'DM Serif Display',serif;font-size:16px;color:var(--deep);}
+  .nap-time-range{font-size:12px;color:#666;margin-top:2px;}
+
+  .meds-bar{background:white;border-radius:14px;padding:12px 16px;display:flex;gap:12px;margin-bottom:12px;box-shadow:0 2px 12px var(--shadow);}
+  .med-pill{flex:1;display:flex;align-items:center;gap:8px;background:var(--cream);border-radius:10px;padding:8px 12px;cursor:pointer;border:2px solid transparent;transition:all 0.2s;}
+  .med-pill.given{background:var(--sage-light);border-color:var(--sage);}
+  .med-icon{font-size:20px;}
+  .med-name{font-size:13px;font-weight:600;}
+  .med-status{font-size:10px;color:#888;}
+  .med-check{margin-left:auto;font-size:18px;}
+
+  .since-feed-banner{background:linear-gradient(135deg,var(--soft-peach),var(--warm-sand));border-radius:14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .since-val{font-family:'DM Serif Display',serif;font-size:22px;color:var(--terra);}
+  .since-label{font-size:12px;color:#888;margin-top:2px;}
+  .since-icon{font-size:32px;opacity:0.6;}
+
+  .page{display:none;}
+  .page.active{display:block;}
+
+  .analysis-card{background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 12px var(--shadow);}
+  .analysis-title{font-family:'DM Serif Display',serif;font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .avg-row{display:flex;justify-content:space-around;text-align:center;}
+  .avg-val{font-family:'DM Serif Display',serif;font-size:22px;color:var(--terra);}
+  .avg-label{font-size:11px;color:#999;margin-top:2px;}
+  .bar-chart{display:flex;gap:6px;align-items:flex-end;height:80px;margin-top:8px;}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;}
+  .bar-fill{width:100%;border-radius:4px 4px 0 0;min-height:4px;}
+  .bar-label{font-size:9px;color:#aaa;}
+
+  .growth-card{background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 12px var(--shadow);}
+  .growth-inputs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .growth-input-group{background:var(--cream);border-radius:12px;padding:12px;text-align:center;}
+  .growth-val{font-family:'DM Serif Display',serif;font-size:24px;color:var(--terra);}
+  .growth-unit{font-size:12px;color:#aaa;}
+  .growth-label{font-size:11px;color:#888;margin-top:4px;}
+  .growth-percentile{background:var(--sage-light);border-radius:10px;padding:10px 14px;text-align:center;font-size:13px;color:#2d4d2d;font-weight:500;}
+  .percentile-val{font-family:'DM Serif Display',serif;font-size:28px;color:var(--sage);display:block;}
+
+  .history-day{background:white;border-radius:14px;margin-bottom:10px;overflow:hidden;box-shadow:0 2px 10px var(--shadow);}
+  .history-day-header{padding:12px 16px;background:var(--soft-peach);display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+  .history-day-title{font-family:'DM Serif Display',serif;font-size:15px;}
+  .history-day-sum{font-size:12px;color:var(--terra);font-weight:500;}
+  .history-day-body{padding:10px 16px;display:none;}
+  .history-day-body.open{display:block;}
+  .history-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--cream);}
+  .history-row:last-child{border-bottom:none;}
+  .history-type{font-size:16px;}
+  .history-detail{font-size:13px;color:var(--deep);}
+  .history-time{font-size:11px;color:#aaa;margin-left:auto;}
+
+  .empty{text-align:center;padding:40px 20px;color:#bbb;}
+  .empty-icon{font-size:48px;margin-bottom:8px;}
+  .empty-text{font-size:14px;}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(61,35,20,0.45);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:white;border-radius:24px 24px 0 0;padding:0 0 30px;width:100%;max-width:500px;animation:slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);max-height:90vh;overflow-y:auto;}
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .modal-handle{width:40px;height:4px;background:#ddd;border-radius:2px;margin:12px auto 0;}
+  .modal-header{padding:16px 20px 12px;border-bottom:1px solid var(--soft-peach);display:flex;align-items:center;justify-content:space-between;}
+  .modal-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--deep);}
+  .modal-close{background:var(--cream);border:none;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .modal-body{padding:16px 20px;}
+
+  .form-group{margin-bottom:16px;}
+  .form-label{font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:block;}
+  .form-input{width:100%;background:var(--cream);border:1.5px solid var(--warm-sand);border-radius:10px;padding:11px 14px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--deep);outline:none;transition:border-color 0.2s;}
+  .form-input:focus{border-color:var(--terra);}
+  .ml-row{display:flex;align-items:center;gap:10px;}
+  .ml-btn{background:var(--soft-peach);border:none;width:40px;height:40px;border-radius:10px;font-size:20px;cursor:pointer;color:var(--terra);flex-shrink:0;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .ml-display{flex:1;text-align:center;font-family:'DM Serif Display',serif;font-size:28px;color:var(--terra);}
+  .ml-unit{font-size:14px;color:#aaa;}
+  .ml-presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+  .ml-preset{background:var(--cream);border:1.5px solid var(--warm-sand);border-radius:20px;padding:4px 12px;font-size:13px;cursor:pointer;transition:all 0.15s;color:var(--deep);}
+  .ml-preset.active{background:var(--terra);border-color:var(--terra);color:white;}
+  .toggle-group{display:flex;flex-direction:column;gap:10px;}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--cream);border-radius:12px;padding:12px 14px;}
+  .toggle-info{display:flex;align-items:center;gap:10px;}
+  .toggle-emoji{font-size:22px;}
+  .toggle-name{font-size:15px;font-weight:500;}
+  .toggle-desc{font-size:11px;color:#999;}
+  .switch{position:relative;width:46px;height:26px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;}
+  .switch-slider{position:absolute;inset:0;background:#ddd;border-radius:26px;cursor:pointer;transition:background 0.2s;}
+  .switch-slider::before{content:'';position:absolute;height:20px;width:20px;left:3px;bottom:3px;background:white;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.2);}
+  .switch input:checked + .switch-slider{background:var(--sage);}
+  .switch input:checked + .switch-slider::before{transform:translateX(20px);}
+  .save-btn{width:100%;background:linear-gradient(135deg,var(--terra),var(--blush));color:white;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:6px;box-shadow:0 4px 16px rgba(212,120,74,0.4);transition:transform 0.15s,box-shadow 0.15s;}
+  .save-btn:hover{transform:translateY(-1px);}
+  .save-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+
+  .fab-menu{position:fixed;bottom:155px;right:20px;display:none;flex-direction:column;gap:10px;z-index:99;align-items:flex-end;}
+  .fab-menu.open{display:flex;}
+  .fab-item{display:flex;align-items:center;gap:10px;animation:popIn 0.2s cubic-bezier(0.34,1.56,0.64,1);}
+  @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
+  .fab-item-label{background:white;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:500;box-shadow:0 2px 10px var(--shadow-strong);color:var(--deep);white-space:nowrap;}
+  .fab-mini{background:white;border:none;width:44px;height:44px;border-radius:50%;font-size:20px;cursor:pointer;box-shadow:0 3px 14px var(--shadow-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.15s;}
+  .add-fab{position:fixed;bottom:90px;right:20px;background:linear-gradient(135deg,var(--terra),var(--blush));color:white;border:none;width:56px;height:56px;border-radius:50%;font-size:26px;cursor:pointer;box-shadow:0 4px 20px rgba(212,120,74,0.5);display:flex;align-items:center;justify-content:center;z-index:100;transition:transform 0.2s;}
+  .fab-rotate{transition:transform 0.25s;}
+  .fab-rotate.open{transform:rotate(45deg);}
+
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--soft-peach);display:flex;padding:6px 0 8px;z-index:99;}
+  .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:4px;}
+  .nav-icon{font-size:20px;}
+  .nav-label{font-size:9px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:0.4px;}
+  .nav-item.active .nav-label{color:var(--terra);}
+
+  .settings-card{background:white;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 2px 10px var(--shadow);}
+  .settings-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--cream);}
+  .settings-row:last-child{border-bottom:none;}
+
+  .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--deep);color:white;padding:10px 20px;border-radius:30px;font-size:14px;z-index:500;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);white-space:nowrap;}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+
+  .loading-overlay{position:fixed;inset:0;background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity 0.4s;}
+  .loading-overlay.hidden{opacity:0;pointer-events:none;}
+  .loading-bottle{font-size:52px;animation:bounce 0.7s infinite alternate;}
+  @keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+  .loading-text{font-family:'DM Serif Display',serif;font-size:18px;color:var(--terra);margin-top:16px;}
+  .loading-sub{font-size:13px;color:#aaa;margin-top:6px;}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-bottle">🍼</div>
+  <div class="loading-text">Baby Tracker</div>
+  <div class="loading-sub">Syncing data…</div>
+</div>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>👶 Baby Tracker <span class="sync-dot offline" id="syncDot"></span></h1>
+      <div class="header-sub" id="babyNameSub">Loading…</div>
+    </div>
+    <div style="text-align:right">
+      <div style="color:white;font-size:11px;opacity:0.75">Next feed in</div>
+      <div style="color:white;font-family:'DM Serif Display',serif;font-size:20px;" id="headerNextFeed">–</div>
+    </div>
+  </div>
+  <div class="date-nav">
+    <button class="date-btn" onclick="changeDay(-1)">‹</button>
+    <div class="date-label" id="dateLabelEl"></div>
+    <button class="date-btn" onclick="changeDay(1)">›</button>
+    <button class="today-btn" onclick="goToday()">Today</button>
+  </div>
+</div>
+
+<div class="summary-strip">
+  <div class="stat-cell"><div class="stat-val" id="sumMl">–</div><div class="stat-label">ml total</div></div>
+  <div class="stat-divider"></div>
+  <div class="stat-cell"><div class="stat-val" id="sumFeeds">–</div><div class="stat-label">feeds</div></div>
+  <div class="stat-divider"></div>
+  <div class="stat-cell"><div class="stat-val" id="sumNapH">–</div><div class="stat-label">nap hrs</div></div>
+  <div class="stat-divider"></div>
+  <div class="stat-cell"><div class="stat-val" id="sumSleepH">–</div><div class="stat-label">sleep hrs</div></div>
+</div>
+
+<!-- DAY PAGE -->
+<div class="page active" id="pageTodayEl">
+  <div class="section" style="padding-bottom:0">
+    <div class="since-feed-banner">
+      <div><div class="since-val" id="sinceLastFeed">–</div><div class="since-label">since last feed</div></div>
+      <div class="since-icon">🍼</div>
+    </div>
+    <div class="meds-bar">
+      <div class="med-pill" id="vitDPill" onclick="toggleMed('vitD')">
+        <div class="med-icon">☀️</div>
+        <div><div class="med-name">Vitamin D</div><div class="med-status" id="vitDStatus">Not given</div></div>
+        <div class="med-check" id="vitDCheck">○</div>
+      </div>
+      <div class="med-pill" id="flatPill" onclick="toggleMed('flat')">
+        <div class="med-icon">💨</div>
+        <div><div class="med-name">Flatulex</div><div class="med-status" id="flatStatus">Not given</div></div>
+        <div class="med-check" id="flatCheck">○</div>
+      </div>
+    </div>
+    <div class="wake-sleep-card">
+      <div class="ws-item" onclick="editWakeTime()">
+        <div class="ws-icon">🌅</div><div class="ws-time" id="wakeTimeDisplay">–</div><div class="ws-label">Wake up</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:22px;color:var(--sage);opacity:0.5">☁️</div>
+        <div class="night-sleep-info" id="nightSleepInfo">–</div>
+      </div>
+      <div class="ws-item" onclick="editSleepTime()">
+        <div class="ws-icon">🌙</div><div class="ws-time" id="sleepTimeDisplay">–</div><div class="ws-label">Bedtime</div>
+      </div>
+    </div>
+  </div>
+  <div class="section" style="padding-top:12px">
+    <div class="section-title">🍼 Feeds</div>
+    <div class="feed-list" id="feedList"><div class="empty"><div class="empty-icon">🍼</div><div class="empty-text">No feeds logged yet</div></div></div>
+  </div>
+  <div class="section" style="padding-top:0">
+    <div class="section-title">😴 Naps</div>
+    <div class="feed-list" id="napList"><div class="empty"><div class="empty-icon">😴</div><div class="empty-text">No naps logged yet</div></div></div>
+  </div>
+</div>
+
+<!-- ANALYSIS PAGE -->
+<div class="page" id="pageAnalysis">
+  <div class="section">
+    <div class="section-title">📊 Analysis <span style="font-size:13px;font-weight:400;font-family:'DM Sans',sans-serif;color:#aaa">last 7 days</span></div>
+    <div class="analysis-card">
+      <div class="analysis-title">🍼 Feeding</div>
+      <div class="avg-row">
+        <div><div class="avg-val" id="avgMl">–</div><div class="avg-label">avg ml/day</div></div>
+        <div><div class="avg-val" id="avgFeeds">–</div><div class="avg-label">avg feeds/day</div></div>
+        <div><div class="avg-val" id="avgBetween">–</div><div class="avg-label">avg hrs between</div></div>
+      </div>
+      <div class="bar-chart" id="mlBarChart"></div>
+    </div>
+    <div class="analysis-card">
+      <div class="analysis-title">😴 Sleep & Naps</div>
+      <div class="avg-row">
+        <div><div class="avg-val" id="avgSleep">–</div><div class="avg-label">avg night sleep</div></div>
+        <div><div class="avg-val" id="avgNap">–</div><div class="avg-label">avg nap time</div></div>
+      </div>
+      <div class="bar-chart" id="sleepBarChart"></div>
+    </div>
+    <div class="analysis-card">
+      <div class="analysis-title">⏰ Feed timing</div>
+      <div id="feedTimingList" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+    <div class="analysis-card">
+      <div class="analysis-title">💊 Medication</div>
+      <div class="avg-row">
+        <div><div class="avg-val" id="avgVitD">–</div><div class="avg-label">Vit D days (7d)</div></div>
+        <div><div class="avg-val" id="avgFlat">–</div><div class="avg-label">Flatulex days (7d)</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GROWTH PAGE -->
+<div class="page" id="pageGrowth">
+  <div class="section">
+    <div class="section-title">📏 Growth Tracking</div>
+    <div class="growth-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-family:'DM Serif Display',serif;font-size:16px">Add measurement</span>
+        <button onclick="openGrowthModal()" style="background:var(--terra);color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Add</button>
+      </div>
+      <div class="growth-inputs">
+        <div class="growth-input-group"><div class="growth-val" id="latestWeightVal">–</div><div class="growth-unit">kg</div><div class="growth-label">Latest weight</div></div>
+        <div class="growth-input-group"><div class="growth-val" id="latestHeightVal">–</div><div class="growth-unit">cm</div><div class="growth-label">Latest height</div></div>
+      </div>
+      <div class="growth-percentile" id="percentileInfo">Add measurements to see growth percentile</div>
+    </div>
+    <div class="growth-card"><div class="analysis-title">⚖️ Weight curve</div><div id="weightChart" style="background:var(--cream);border-radius:12px;padding:12px;height:140px;overflow:hidden"></div></div>
+    <div class="growth-card"><div class="analysis-title">📏 Height curve</div><div id="heightChart" style="background:var(--cream);border-radius:12px;padding:12px;height:140px;overflow:hidden"></div></div>
+    <div class="growth-card"><div class="analysis-title">📋 History</div><div id="growthHistory"></div></div>
+  </div>
+</div>
+
+<!-- HISTORY PAGE -->
+<div class="page" id="pageHistory">
+  <div class="section"><div class="section-title">📅 History</div><div id="historyList"></div></div>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div class="page" id="pageSettings">
+  <div class="section">
+    <div class="section-title">⚙️ Settings</div>
+    <div class="settings-card">
+      <div class="settings-row"><span>Baby's name</span><input class="form-input" id="babyNameInput" style="width:140px;text-align:right" placeholder="Baby" oninput="debounceSetting('baby_name',this.value)"></div>
+      <div class="settings-row"><span>Date of birth</span><input class="form-input" type="date" id="dobInput" style="width:160px" onchange="debounceSetting('dob',this.value)"></div>
+      <div class="settings-row"><span>Gender</span>
+        <select class="form-input" id="genderInput" style="width:110px" onchange="debounceSetting('gender',this.value)">
+          <option value="">–</option><option value="girl">Girl</option><option value="boy">Boy</option>
+        </select>
+      </div>
+      <div class="settings-row"><span>Feed interval (h)</span><input class="form-input" type="number" id="feedIntervalInput" style="width:70px;text-align:center" value="3" min="1" max="6" onchange="debounceSetting('feed_interval',parseInt(this.value))"></div>
+    </div>
+    <div style="padding:10px 0;color:#bbb;font-size:12px;text-align:center">🔄 Shared in real-time between all devices</div>
+  </div>
+</div>
+
+<div class="fab-menu" id="fabMenu">
+  <div class="fab-item"><div class="fab-item-label">Add nap</div><button class="fab-mini" onclick="openNapModal()">😴</button></div>
+  <div class="fab-item"><div class="fab-item-label">Log feed</div><button class="fab-mini" onclick="openFeedModal()">🍼</button></div>
+</div>
+<button class="add-fab" id="fabBtn" onclick="toggleFab()"><span class="fab-rotate" id="fabIcon">+</span></button>
+
+<div class="bottom-nav">
+  <button class="nav-item active" onclick="showPage('pageToday','navToday')" id="navToday"><div class="nav-icon">📋</div><div class="nav-label">Today</div></button>
+  <button class="nav-item" onclick="showPage('pageAnalysis','navAnalysis')" id="navAnalysis"><div class="nav-icon">📊</div><div class="nav-label">Analysis</div></button>
+  <button class="nav-item" onclick="showPage('pageGrowth','navGrowth')" id="navGrowth"><div class="nav-icon">📏</div><div class="nav-label">Growth</div></button>
+  <button class="nav-item" onclick="showPage('pageHistory','navHistory')" id="navHistory"><div class="nav-icon">📅</div><div class="nav-label">History</div></button>
+  <button class="nav-item" onclick="showPage('pageSettings','navSettings')" id="navSettings"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></button>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="feedModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title" id="feedModalTitle">Log Feed 🍼</div><button class="modal-close" onclick="closeFeedModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Time</label><input class="form-input" type="time" id="feedTimeInput"></div>
+      <div class="form-group">
+        <label class="form-label">Amount (ml)</label>
+        <div class="ml-row">
+          <button class="ml-btn" onclick="changeMl(-10)">−</button>
+          <div class="ml-display"><span id="mlDisplay">120</span><span class="ml-unit"> ml</span></div>
+          <button class="ml-btn" onclick="changeMl(10)">+</button>
+        </div>
+        <div class="ml-presets">
+          <button class="ml-preset" onclick="setMl(60)">60</button>
+          <button class="ml-preset" onclick="setMl(90)">90</button>
+          <button class="ml-preset active" onclick="setMl(120)">120</button>
+          <button class="ml-preset" onclick="setMl(150)">150</button>
+          <button class="ml-preset" onclick="setMl(180)">180</button>
+          <button class="ml-preset" onclick="setMl(210)">210</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Supplements</label>
+        <div class="toggle-group">
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-emoji">☀️</div><div><div class="toggle-name">Vitamin D</div><div class="toggle-desc">400 IU drop</div></div></div><label class="switch"><input type="checkbox" id="vitDToggle"><span class="switch-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-emoji">💨</div><div><div class="toggle-name">Flatulex</div><div class="toggle-desc">Gas relief drops</div></div></div><label class="switch"><input type="checkbox" id="flatToggle"><span class="switch-slider"></span></label></div>
+        </div>
+      </div>
+      <button class="save-btn" id="feedSaveBtn" onclick="saveFeed()">Save Feed</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="napModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title">Log Nap 😴</div><button class="modal-close" onclick="closeNapModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Start time</label><input class="form-input" type="time" id="napStartInput"></div>
+      <div class="form-group"><label class="form-label">End time</label><input class="form-input" type="time" id="napEndInput"></div>
+      <button class="save-btn" id="napSaveBtn" onclick="saveNap()">Save Nap</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="wsModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title" id="wsModalTitle">Set time</div><button class="modal-close" onclick="closeWsModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label" id="wsModalLabel">Time</label><input class="form-input" type="time" id="wsTimeInput"></div>
+      <button class="save-btn" onclick="saveWsTime()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="growthModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title">Add Measurement 📏</div><button class="modal-close" onclick="closeGrowthModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" id="growthDateInput"></div>
+      <div class="form-group"><label class="form-label">Weight (kg)</label><input class="form-input" type="number" id="growthWeightInput" step="0.01" placeholder="e.g. 4.25"></div>
+      <div class="form-group"><label class="form-label">Height (cm)</label><input class="form-input" type="number" id="growthHeightInput" step="0.1" placeholder="e.g. 55.0"></div>
+      <div class="form-group"><label class="form-label">Head circumference (cm)</label><input class="form-input" type="number" id="growthHCInput" step="0.1" placeholder="optional"></div>
+      <button class="save-btn" onclick="saveGrowth()">Save Measurement</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://ubsxpaswsoayetvldzse.supabase.co';
+const SUPABASE_KEY='sb_publishable_-4TLyJWHLQFK56F5852ybA_0CQOe09f';
+const{createClient}=supabase;
+const db=createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let currentDateKey=todayKey(),editingFeedId=null,wsModeEditing=null,currentMl=120,fabOpen=false;
+let appSettings={baby_name:'',dob:'',gender:'',feed_interval:3};
+let dayFeeds=[],dayNaps=[],dayData={wake_time:null,sleep_time:null,vit_d_given:false,flat_given:false};
+let allGrowth=[],settingDebounce=null,prevSleepTime=null;
+
+function todayKey(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function getPrevKey(k){const d=new Date(k+'T12:00:00');d.setDate(d.getDate()-1);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function setSyncing(v){document.getElementById('syncDot').className='sync-dot'+(v?' syncing':'');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+function fmtDur(min){const h=Math.floor(min/60),m=min%60;return h>0?`${h}h${m?m+'m':''}`:m+'m';}
+function napDur(n){const[sh,sm]=(n.start_time||'0:0').split(':').map(Number),[eh,em]=(n.end_time||'0:0').split(':').map(Number);return Math.max(0,(eh*60+em)-(sh*60+sm));}
+
+async function init(){
+  try{
+    await Promise.all([loadSettings(),loadDayData(),loadGrowth(),loadPrevSleep()]);
+    setupRealtime();
+  }catch(e){console.error(e);showToast('Connection error');}
+  document.getElementById('loadingOverlay').classList.add('hidden');
+  renderDay();
+  setInterval(()=>{if(document.getElementById('pageTodayEl').classList.contains('active'))renderSinceFeed();},60000);
+}
+
+async function loadSettings(){
+  const{data}=await db.from('settings').select('*').eq('id',1).single();
+  if(data){appSettings=data;updateHeaderName();}
+}
+async function loadDayData(){
+  const[fr,nr,dr]=await Promise.all([
+    db.from('feeds').select('*').eq('date_key',currentDateKey).order('time'),
+    db.from('naps').select('*').eq('date_key',currentDateKey).order('start_time'),
+    db.from('day_data').select('*').eq('date_key',currentDateKey).single()
+  ]);
+  dayFeeds=fr.data||[];dayNaps=nr.data||[];dayData=dr.data||{wake_time:null,sleep_time:null,vit_d_given:false,flat_given:false};
+}
+async function loadPrevSleep(){
+  const pk=getPrevKey(currentDateKey);
+  const{data}=await db.from('day_data').select('sleep_time').eq('date_key',pk).single();
+  prevSleepTime=data?.sleep_time||null;
+}
+async function loadGrowth(){const{data}=await db.from('growth').select('*').order('date_key');allGrowth=data||[];}
+
+function setupRealtime(){
+  db.channel('bt-live')
+    .on('postgres_changes',{event:'*',schema:'public',table:'feeds'},async(p)=>{
+      if((p.new?.date_key||p.old?.date_key)===currentDateKey){
+        const{data}=await db.from('feeds').select('*').eq('date_key',currentDateKey).order('time');
+        dayFeeds=data||[];renderDay();showToast('🔄 Synced');
+      }
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'naps'},async(p)=>{
+      if((p.new?.date_key||p.old?.date_key)===currentDateKey){
+        const{data}=await db.from('naps').select('*').eq('date_key',currentDateKey).order('start_time');
+        dayNaps=data||[];renderDay();
+      }
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'day_data'},async(p)=>{
+      if(p.new?.date_key===currentDateKey){dayData=p.new;renderDay();}
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'settings'},async()=>{
+      await loadSettings();loadSettingsForm();
+    })
+    .subscribe(s=>{document.getElementById('syncDot').className='sync-dot'+(s==='SUBSCRIBED'?'':' offline');});
+}
+
+function updateHeaderName(){
+  const name=appSettings.baby_name||'Baby';
+  let age='';
+  if(appSettings.dob){const w=Math.round((new Date()-new Date(appSettings.dob))/(7*24*3600*1000));age=w<16?` · ${w}w old`:` · ${Math.round(w/4.33)}m old`;}
+  document.getElementById('babyNameSub').textContent=name+age;
+}
+
+function showPage(pageId,navId){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById(pageId==='pageToday'?'pageTodayEl':pageId);
+  if(pg)pg.classList.add('active');
+  document.getElementById(navId)?.classList.add('active');
+  document.getElementById('fabBtn').style.display=pageId==='pageToday'?'flex':'none';
+  if(pageId==='pageAnalysis')renderAnalysis();
+  if(pageId==='pageGrowth')renderGrowth();
+  if(pageId==='pageHistory')renderHistory();
+  if(pageId==='pageSettings')loadSettingsForm();
+}
+
+async function changeDay(delta){
+  const d=new Date(currentDateKey+'T12:00:00');d.setDate(d.getDate()+delta);
+  currentDateKey=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  await Promise.all([loadDayData(),loadPrevSleep()]);renderDay();
+}
+function goToday(){currentDateKey=todayKey();Promise.all([loadDayData(),loadPrevSleep()]).then(renderDay);}
+
+function formatDateLabel(k){
+  const d=new Date(k+'T12:00:00'),today=todayKey();
+  const yest=(()=>{const y=new Date();y.setDate(y.getDate()-1);return`${y.getFullYear()}-${String(y.getMonth()+1).padStart(2,'0')}-${String(y.getDate()).padStart(2,'0')}`;})();
+  if(k===today)return'Today · '+d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  if(k===yest)return'Yesterday · '+d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  return d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+}
+
+function renderDay(){
+  document.getElementById('dateLabelEl').textContent=formatDateLabel(currentDateKey);
+  const totalMl=dayFeeds.reduce((s,f)=>s+f.ml,0);
+  document.getElementById('sumMl').textContent=totalMl||'–';
+  document.getElementById('sumFeeds').textContent=dayFeeds.length||'–';
+  const totalNapMin=dayNaps.reduce((s,n)=>s+napDur(n),0);
+  document.getElementById('sumNapH').textContent=totalNapMin?(totalNapMin/60).toFixed(1):'–';
+  // Night sleep
+  let nightMin=0;
+  if(prevSleepTime&&dayData.wake_time){
+    const[sh,sm]=prevSleepTime.split(':').map(Number),[wh,wm]=dayData.wake_time.split(':').map(Number);
+    nightMin=Math.max(0,(wh*60+wm+24*60)-(sh*60+sm));
+  }
+  document.getElementById('sumSleepH').textContent=nightMin?(nightMin/60).toFixed(1):'–';
+  document.getElementById('nightSleepInfo').textContent=nightMin?fmtDur(nightMin)+' night sleep':'–';
+  renderSinceFeed();
+  // Meds
+  document.getElementById('vitDPill').className='med-pill'+(dayData.vit_d_given?' given':'');
+  document.getElementById('flatPill').className='med-pill'+(dayData.flat_given?' given':'');
+  document.getElementById('vitDStatus').textContent=dayData.vit_d_given?'✓ Given today':'Not given today';
+  document.getElementById('flatStatus').textContent=dayData.flat_given?'✓ Given today':'Not given today';
+  document.getElementById('vitDCheck').textContent=dayData.vit_d_given?'✅':'○';
+  document.getElementById('flatCheck').textContent=dayData.flat_given?'✅':'○';
+  document.getElementById('wakeTimeDisplay').textContent=dayData.wake_time||'–';
+  document.getElementById('sleepTimeDisplay').textContent=dayData.sleep_time||'–';
+  renderFeedList();renderNapList();
+}
+
+function renderSinceFeed(){
+  if(dayFeeds.length>0&&currentDateKey===todayKey()){
+    const sorted=[...dayFeeds].sort((a,b)=>a.time.localeCompare(b.time));
+    const[h,m]=sorted[sorted.length-1].time.split(':').map(Number);
+    const now=new Date(),last=new Date();last.setHours(h,m,0,0);
+    const diff=Math.floor((now-last)/60000);
+    if(diff>=0){
+      document.getElementById('sinceLastFeed').textContent=`${Math.floor(diff/60)}h ${diff%60}m`;
+      const rem=(appSettings.feed_interval||3)*60-diff;
+      document.getElementById('headerNextFeed').textContent=rem>0?`${Math.floor(rem/60)}h ${rem%60}m`:'Now!';
+      return;
+    }
+  }
+  document.getElementById('sinceLastFeed').textContent='–';
+  document.getElementById('headerNextFeed').textContent='–';
+}
+
+function renderFeedList(){
+  const el=document.getElementById('feedList');
+  if(!dayFeeds.length){el.innerHTML='<div class="empty"><div class="empty-icon">🍼</div><div class="empty-text">No feeds logged yet</div></div>';return;}
+  el.innerHTML=[...dayFeeds].sort((a,b)=>a.time.localeCompare(b.time)).map(f=>`
+    <div class="feed-card">
+      <div class="feed-time-pill">${f.time}</div>
+      <div class="feed-info"><div class="feed-ml">${f.ml} ml</div>
+      <div class="feed-tags">${f.vit_d?'<span class="tag tag-vitD">☀️ Vit D</span>':''}${f.flat?'<span class="tag tag-flat">💨 Flatulex</span>':''}</div></div>
+      <div class="feed-actions"><button class="icon-btn" onclick="editFeed('${f.id}')">✏️</button><button class="icon-btn delete" onclick="deleteFeed('${f.id}')">🗑</button></div>
+    </div>`).join('');
+}
+
+function renderNapList(){
+  const el=document.getElementById('napList');
+  if(!dayNaps.length){el.innerHTML='<div class="empty"><div class="empty-icon">😴</div><div class="empty-text">No naps logged yet</div></div>';return;}
+  el.innerHTML=[...dayNaps].sort((a,b)=>a.start_time.localeCompare(b.start_time)).map(n=>{
+    const dur=napDur(n);return`<div class="nap-card"><div class="nap-icon">😴</div><div class="nap-info"><div class="nap-duration">${fmtDur(dur)}</div><div class="nap-time-range">${n.start_time} → ${n.end_time}</div></div><div class="feed-actions"><button class="icon-btn delete" onclick="deleteNap('${n.id}')">🗑</button></div></div>`;
+  }).join('');
+}
+
+async function upsertDayData(patch){
+  setSyncing(true);
+  const u={date_key:currentDateKey,...dayData,...patch,updated_at:new Date().toISOString()};
+  delete u.id;
+  const{data}=await db.from('day_data').upsert(u,{onConflict:'date_key'}).select().single();
+  if(data)dayData=data;
+  setSyncing(false);
+}
+
+function openFeedModal(id=null){
+  closeFab();editingFeedId=id;
+  document.getElementById('feedModal').classList.add('open');
+  if(id){
+    const f=dayFeeds.find(x=>x.id===id);
+    document.getElementById('feedModalTitle').textContent='Edit Feed 🍼';
+    document.getElementById('feedTimeInput').value=f.time;
+    setMl(f.ml);
+    document.getElementById('vitDToggle').checked=f.vit_d;
+    document.getElementById('flatToggle').checked=f.flat;
+  }else{
+    document.getElementById('feedModalTitle').textContent='Log Feed 🍼';
+    const now=new Date();
+    document.getElementById('feedTimeInput').value=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    setMl(120);document.getElementById('vitDToggle').checked=false;document.getElementById('flatToggle').checked=false;
+  }
+}
+function closeFeedModal(){document.getElementById('feedModal').classList.remove('open');editingFeedId=null;}
+
+async function saveFeed(){
+  const time=document.getElementById('feedTimeInput').value;
+  if(!time){showToast('Please set a time');return;}
+  const btn=document.getElementById('feedSaveBtn');btn.disabled=true;btn.textContent='Saving…';
+  setSyncing(true);
+  const vitD=document.getElementById('vitDToggle').checked,flat=document.getElementById('flatToggle').checked;
+  if(editingFeedId){
+    await db.from('feeds').update({time,ml:currentMl,vit_d:vitD,flat}).eq('id',editingFeedId);
+  }else{
+    await db.from('feeds').insert({id:Date.now().toString(),date_key:currentDateKey,time,ml:currentMl,vit_d:vitD,flat});
+    const patch={};if(vitD)patch.vit_d_given=true;if(flat)patch.flat_given=true;
+    if(Object.keys(patch).length)await upsertDayData(patch);
+  }
+  const{data}=await db.from('feeds').select('*').eq('date_key',currentDateKey).order('time');
+  dayFeeds=data||[];setSyncing(false);btn.disabled=false;btn.textContent='Save Feed';
+  closeFeedModal();renderDay();showToast('Feed saved ✓');
+}
+function editFeed(id){openFeedModal(id);}
+async function deleteFeed(id){
+  setSyncing(true);await db.from('feeds').delete().eq('id',id);
+  const{data}=await db.from('feeds').select('*').eq('date_key',currentDateKey).order('time');
+  dayFeeds=data||[];setSyncing(false);renderDay();showToast('Deleted');
+}
+function changeMl(d){setMl(Math.max(10,currentMl+d));}
+function setMl(v){currentMl=v;document.getElementById('mlDisplay').textContent=v;document.querySelectorAll('.ml-preset').forEach(b=>b.classList.toggle('active',parseInt(b.textContent)===v));}
+
+function openNapModal(){
+  closeFab();const now=new Date(),h=String(now.getHours()).padStart(2,'0'),m=String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('napStartInput').value=`${h}:${m}`;document.getElementById('napEndInput').value=`${h}:${m}`;
+  document.getElementById('napModal').classList.add('open');
+}
+function closeNapModal(){document.getElementById('napModal').classList.remove('open');}
+async function saveNap(){
+  const s=document.getElementById('napStartInput').value,e=document.getElementById('napEndInput').value;
+  if(!s||!e){showToast('Set start and end');return;}
+  const btn=document.getElementById('napSaveBtn');btn.disabled=true;btn.textContent='Saving…';
+  setSyncing(true);
+  await db.from('naps').insert({id:Date.now().toString(),date_key:currentDateKey,start_time:s,end_time:e});
+  const{data}=await db.from('naps').select('*').eq('date_key',currentDateKey).order('start_time');
+  dayNaps=data||[];setSyncing(false);btn.disabled=false;btn.textContent='Save Nap';
+  closeNapModal();renderDay();showToast('Nap saved ✓');
+}
+async function deleteNap(id){
+  setSyncing(true);await db.from('naps').delete().eq('id',id);
+  const{data}=await db.from('naps').select('*').eq('date_key',currentDateKey).order('start_time');
+  dayNaps=data||[];setSyncing(false);renderDay();
+}
+
+function editWakeTime(){wsModeEditing='wake';document.getElementById('wsModalTitle').textContent='Wake up time 🌅';document.getElementById('wsModalLabel').textContent='Wake up time';document.getElementById('wsTimeInput').value=dayData.wake_time||'';document.getElementById('wsModal').classList.add('open');}
+function editSleepTime(){wsModeEditing='sleep';document.getElementById('wsModalTitle').textContent='Bedtime 🌙';document.getElementById('wsModalLabel').textContent='Bedtime';document.getElementById('wsTimeInput').value=dayData.sleep_time||'';document.getElementById('wsModal').classList.add('open');}
+function closeWsModal(){document.getElementById('wsModal').classList.remove('open');wsModeEditing=null;}
+async function saveWsTime(){
+  const t=document.getElementById('wsTimeInput').value;if(!t){showToast('Set a time');return;}
+  await upsertDayData(wsModeEditing==='wake'?{wake_time:t}:{sleep_time:t});
+  closeWsModal();renderDay();showToast(wsModeEditing==='wake'?'Wake time saved ✓':'Bedtime saved ✓');
+}
+
+async function toggleMed(med){
+  await upsertDayData(med==='vitD'?{vit_d_given:!dayData.vit_d_given}:{flat_given:!dayData.flat_given});
+  renderDay();
+}
+
+function toggleFab(){fabOpen=!fabOpen;document.getElementById('fabMenu').classList.toggle('open',fabOpen);document.getElementById('fabIcon').classList.toggle('open',fabOpen);}
+function closeFab(){fabOpen=false;document.getElementById('fabMenu').classList.remove('open');document.getElementById('fabIcon').classList.remove('open');}
+
+function getLast7Days(){const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);}return days;}
+
+async function renderAnalysis(){
+  const days=getLast7Days();
+  const results=await Promise.all(days.map(k=>Promise.all([
+    db.from('feeds').select('*').eq('date_key',k),
+    db.from('naps').select('*').eq('date_key',k),
+    db.from('day_data').select('*').eq('date_key',k).single()
+  ])));
+  const all=results.map(([f,n,d],i)=>({key:days[i],feeds:f.data||[],naps:n.data||[],day:d.data||{}}));
+  const mlVals=all.map(d=>d.feeds.reduce((s,f)=>s+f.ml,0));
+  const fcounts=all.map(d=>d.feeds.length);
+  const avgMl=mlVals.filter(v=>v>0).length?Math.round(mlVals.filter(v=>v>0).reduce((s,v)=>s+v,0)/mlVals.filter(v=>v>0).length):0;
+  const avgFeeds=fcounts.filter(v=>v>0).length?(fcounts.filter(v=>v>0).reduce((s,v)=>s+v,0)/fcounts.filter(v=>v>0).length).toFixed(1):0;
+  let bh=[];
+  all.forEach(d=>{const fs=[...d.feeds].sort((a,b)=>a.time.localeCompare(b.time));for(let i=1;i<fs.length;i++){const[ah,am]=fs[i-1].time.split(':').map(Number),[bH,bm]=fs[i].time.split(':').map(Number),diff=(bH*60+bm)-(ah*60+am);if(diff>0)bh.push(diff/60);}});
+  const avgBetween=bh.length?(bh.reduce((s,v)=>s+v,0)/bh.length).toFixed(1):0;
+  document.getElementById('avgMl').textContent=avgMl||'–';
+  document.getElementById('avgFeeds').textContent=avgFeeds||'–';
+  document.getElementById('avgBetween').textContent=avgBetween?avgBetween+'h':'–';
+  const napVals=all.map(d=>d.naps.reduce((s,n)=>s+napDur(n),0));
+  const avgNapMin=napVals.filter(v=>v>0).length?Math.round(napVals.filter(v=>v>0).reduce((s,v)=>s+v,0)/napVals.filter(v=>v>0).length):0;
+  document.getElementById('avgSleep').textContent='–';
+  document.getElementById('avgNap').textContent=avgNapMin?fmtDur(avgNapMin):'–';
+  renderBarChart('mlBarChart',mlVals,days,'#F2A97E');
+  renderBarChart('sleepBarChart',napVals.map(v=>v/60),days,'#C5B8E8');
+  document.getElementById('avgVitD').textContent=`${all.filter(d=>d.day.vit_d_given).length}/7`;
+  document.getElementById('avgFlat').textContent=`${all.filter(d=>d.day.flat_given).length}/7`;
+  const allFeeds=[];all.forEach(d=>d.feeds.forEach(f=>allFeeds.push(f.time)));
+  const timingEl=document.getElementById('feedTimingList');
+  if(allFeeds.length){
+    const hc={};allFeeds.map(t=>parseInt(t)).forEach(h=>{hc[h]=(hc[h]||0)+1;});
+    timingEl.innerHTML=Object.entries(hc).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([h,c])=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:4px 0">
+        <span style="font-size:13px;width:60px;color:#888">${String(h).padStart(2,'0')}:00</span>
+        <div style="flex:1;background:var(--cream);border-radius:6px;height:10px;overflow:hidden"><div style="height:100%;width:${Math.round(c/all.length*100)}%;background:var(--blush);border-radius:6px"></div></div>
+        <span style="font-size:12px;color:var(--terra);width:30px;text-align:right">${c}x</span>
+      </div>`).join('');
+  }else{timingEl.innerHTML='<div style="color:#bbb;font-size:13px;text-align:center;padding:10px">Not enough data yet</div>';}
+}
+
+function renderBarChart(elId,vals,days,color){
+  const el=document.getElementById(elId),max=Math.max(...vals,1);
+  el.innerHTML=vals.map((v,i)=>{const h=Math.max(4,Math.round((v/max)*70)),d=new Date(days[i]+'T12:00:00');return`<div class="bar-col"><div class="bar-fill" style="height:${h}px;background:${color}"></div><div class="bar-label">${d.toLocaleDateString('en-GB',{weekday:'narrow'})}</div></div>`;}).join('');
+}
+
+function renderGrowth(){
+  if(allGrowth.length){
+    const l=allGrowth[allGrowth.length-1];
+    document.getElementById('latestWeightVal').textContent=l.weight||'–';
+    document.getElementById('latestHeightVal').textContent=l.height||'–';
+    if(appSettings.dob&&l.weight){
+      const w=Math.round((new Date()-new Date(appSettings.dob))/(7*24*3600*1000));
+      const med={0:3.3,4:4.5,8:5.6,12:6.4,16:7.0,20:7.5,24:7.9};
+      const keys=Object.keys(med).map(Number).sort((a,b)=>a-b);
+      const cl=keys.reduce((p,k)=>Math.abs(k-w)<Math.abs(p-w)?k:p,keys[0]);
+      const r=l.weight/med[cl];
+      const pct=r>1.15?75:r>1.05?60:r>0.95?50:r>0.85?35:20;
+      document.getElementById('percentileInfo').innerHTML=`<span class="percentile-val">${pct}th</span>percentile for weight · WHO`;
+    }
+  }
+  ['weight','height'].forEach((f,i)=>renderSVGChart(i===0?'weightChart':'heightChart',allGrowth,f,i===0?'#F2A97E':'#A8C8E8'));
+  const el=document.getElementById('growthHistory');
+  if(!allGrowth.length){el.innerHTML='<div style="color:#bbb;font-size:13px;text-align:center;padding:10px">No measurements yet</div>';return;}
+  el.innerHTML=[...allGrowth].reverse().map(m=>`<div class="history-row"><div class="history-type">📅</div><div class="history-detail">${m.date_key} &nbsp;·&nbsp; ${m.weight?m.weight+'kg':''} ${m.height?m.height+'cm':''}</div><button onclick="deleteGrowth('${m.id}')" style="background:none;border:none;font-size:16px;cursor:pointer;color:#ccc">🗑</button></div>`).join('');
+}
+
+function renderSVGChart(elId,measurements,field,color){
+  const el=document.getElementById(elId),vals=measurements.filter(m=>m[field]).map((m,i)=>({x:i,v:parseFloat(m[field])}));
+  if(!vals.length){el.innerHTML='<div style="color:#bbb;font-size:12px;text-align:center;padding:30px">No data yet</div>';return;}
+  const minV=Math.min(...vals.map(v=>v.v)),maxV=Math.max(...vals.map(v=>v.v)),range=maxV-minV||1,W=280,H=100;
+  const pts=vals.map(v=>`${Math.round((v.x/(measurements.length-1||1))*W)},${Math.round(H-((v.v-minV)/range)*(H-20)-10)}`).join(' ');
+  el.innerHTML=`<svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${vals.map(v=>`<circle cx="${Math.round((v.x/(measurements.length-1||1))*W)}" cy="${Math.round(H-((v.v-minV)/range)*(H-20)-10)}" r="4" fill="${color}"/>`).join('')}<text x="2" y="12" font-size="9" fill="#bbb">${maxV} ${field==='weight'?'kg':'cm'}</text><text x="2" y="${H-2}" font-size="9" fill="#bbb">${minV}</text></svg>`;
+}
+
+function openGrowthModal(){const t=new Date();document.getElementById('growthDateInput').value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;document.getElementById('growthWeightInput').value='';document.getElementById('growthHeightInput').value='';document.getElementById('growthHCInput').value='';document.getElementById('growthModal').classList.add('open');}
+function closeGrowthModal(){document.getElementById('growthModal').classList.remove('open');}
+async function saveGrowth(){
+  const m={id:Date.now().toString(),date_key:document.getElementById('growthDateInput').value,weight:document.getElementById('growthWeightInput').value||null,height:document.getElementById('growthHeightInput').value||null,head_circumference:document.getElementById('growthHCInput').value||null};
+  if(!m.date_key){showToast('Set a date');return;}
+  setSyncing(true);await db.from('growth').insert(m);await loadGrowth();setSyncing(false);closeGrowthModal();renderGrowth();showToast('Measurement saved ✓');
+}
+async function deleteGrowth(id){setSyncing(true);await db.from('growth').delete().eq('id',id);await loadGrowth();setSyncing(false);renderGrowth();}
+
+async function renderHistory(){
+  const el=document.getElementById('historyList');
+  el.innerHTML='<div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading…</div></div>';
+  const days=[];for(let i=0;i<30;i++){const d=new Date();d.setDate(d.getDate()-i);days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);}
+  const results=await Promise.all(days.map(k=>Promise.all([db.from('feeds').select('*').eq('date_key',k).order('time'),db.from('naps').select('*').eq('date_key',k).order('start_time'),db.from('day_data').select('*').eq('date_key',k).single()])));
+  const items=results.map(([f,n,d],i)=>({key:days[i],feeds:f.data||[],naps:n.data||[],day:d.data||{}})).filter(x=>x.feeds.length||x.naps.length||x.day.wake_time);
+  if(!items.length){el.innerHTML='<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No history yet</div></div>';return;}
+  el.innerHTML=items.map(item=>{
+    const totalMl=item.feeds.reduce((s,f)=>s+f.ml,0),totalNap=item.naps.reduce((s,n)=>s+napDur(n),0);
+    const d=new Date(item.key+'T12:00:00');
+    return`<div class="history-day"><div class="history-day-header" onclick="toggleHistoryDay('${item.key}')"><div class="history-day-title">${d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</div><div class="history-day-sum">${item.feeds.length} feeds · ${totalMl}ml${totalNap?' · '+fmtDur(totalNap)+' nap':''}</div></div><div class="history-day-body" id="hist_${item.key}">${item.day.wake_time?`<div class="history-row"><span class="history-type">🌅</span><span class="history-detail">Wake: ${item.day.wake_time}</span></div>`:''}${item.feeds.map(f=>`<div class="history-row"><span class="history-type">🍼</span><span class="history-detail">${f.ml}ml${f.vit_d?' ☀️':''}${f.flat?' 💨':''}</span><span class="history-time">${f.time}</span></div>`).join('')}${item.naps.map(n=>`<div class="history-row"><span class="history-type">😴</span><span class="history-detail">Nap ${fmtDur(napDur(n))}</span><span class="history-time">${n.start_time}–${n.end_time}</span></div>`).join('')}${item.day.sleep_time?`<div class="history-row"><span class="history-type">🌙</span><span class="history-detail">Bed: ${item.day.sleep_time}</span></div>`:''}</div></div>`;
+  }).join('');
+}
+function toggleHistoryDay(k){document.getElementById('hist_'+k)?.classList.toggle('open');}
+
+function loadSettingsForm(){
+  document.getElementById('babyNameInput').value=appSettings.baby_name||'';
+  document.getElementById('dobInput').value=appSettings.dob||'';
+  document.getElementById('genderInput').value=appSettings.gender||'';
+  document.getElementById('feedIntervalInput').value=appSettings.feed_interval||3;
+}
+function debounceSetting(k,v){appSettings[k]=v;updateHeaderName();clearTimeout(settingDebounce);settingDebounce=setTimeout(()=>db.from('settings').update({[k]:v,updated_at:new Date().toISOString()}).eq('id',1),800);}
+
+init();
+</script>
+</body>
+</html>
