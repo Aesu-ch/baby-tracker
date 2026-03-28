@@ -4,853 +4,206 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>👶 Baby Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Baby Tracker">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
-    --cream: #FFF8F0;
-    --soft-peach: #FFE8D6;
-    --warm-sand: #F5DEC8;
-    --blush: #F2A97E;
-    --terra: #D4784A;
-    --deep: #3D2314;
-    --sage: #8BAF8B;
-    --sage-light: #C5DCC5;
-    --sky: #A8C8E8;
-    --sky-light: #D6EAF8;
-    --lavender: #C5B8E8;
-    --gold: #E8C86A;
-    --red-soft: #E8908A;
-    --white: #FFFFFF;
-    --shadow: rgba(61, 35, 20, 0.12);
-    --shadow-strong: rgba(61, 35, 20, 0.22);
+    --cream:#FFF8F0;--soft-peach:#FFE8D6;--warm-sand:#F5DEC8;--blush:#F2A97E;
+    --terra:#D4784A;--deep:#3D2314;--sage:#8BAF8B;--sage-light:#C5DCC5;
+    --sky-light:#D6EAF8;--lavender:#C5B8E8;--gold:#E8C86A;--white:#FFFFFF;
+    --shadow:rgba(61,35,20,0.12);--shadow-strong:rgba(61,35,20,0.22);
   }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);min-height:100vh;padding-bottom:80px;}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:6px;background:#4CAF50;transition:background 0.3s;}
+  .sync-dot.syncing{background:var(--gold);animation:pulse 0.8s infinite;}
+  .sync-dot.offline{background:#ccc;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--cream);
-    color: var(--deep);
-    min-height: 100vh;
-    padding-bottom: 80px;
-  }
+  .header{background:linear-gradient(135deg,var(--terra) 0%,var(--blush) 100%);padding:28px 20px 20px;position:relative;overflow:hidden;}
+  .header::before{content:'';position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.08);top:-60px;right:-40px;}
+  .header::after{content:'';position:absolute;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.06);bottom:-30px;left:30px;}
+  .header-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1;}
+  .header h1{font-family:'DM Serif Display',serif;font-size:28px;color:white;line-height:1.1;display:flex;align-items:center;}
+  .header-sub{font-size:13px;color:rgba(255,255,255,0.75);margin-top:2px;font-weight:300;}
+  .date-nav{display:flex;align-items:center;gap:10px;margin-top:16px;position:relative;z-index:1;}
+  .date-btn{background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .date-label{font-size:14px;color:white;font-weight:500;flex:1;text-align:center;}
+  .today-btn{background:rgba(255,255,255,0.2);border:none;color:white;padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;}
 
-  /* ── HEADER ── */
-  .header {
-    background: linear-gradient(135deg, var(--terra) 0%, var(--blush) 100%);
-    padding: 28px 20px 20px;
-    position: relative;
-    overflow: hidden;
-  }
-  .header::before {
-    content: '';
-    position: absolute;
-    width: 200px; height: 200px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.08);
-    top: -60px; right: -40px;
-  }
-  .header::after {
-    content: '';
-    position: absolute;
-    width: 120px; height: 120px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.06);
-    bottom: -30px; left: 30px;
-  }
-  .header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    position: relative; z-index: 1;
-  }
-  .header h1 {
-    font-family: 'DM Serif Display', serif;
-    font-size: 28px;
-    color: white;
-    line-height: 1.1;
-  }
-  .header-sub {
-    font-size: 13px;
-    color: rgba(255,255,255,0.75);
-    margin-top: 2px;
-    font-weight: 300;
-  }
-  .date-nav {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 16px;
-    position: relative; z-index: 1;
-  }
-  .date-btn {
-    background: rgba(255,255,255,0.2);
-    border: none;
-    color: white;
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    font-size: 16px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.2s;
-  }
-  .date-btn:hover { background: rgba(255,255,255,0.35); }
-  .date-label {
-    font-size: 14px;
-    color: white;
-    font-weight: 500;
-    flex: 1;
-    text-align: center;
-  }
-  .today-btn {
-    background: rgba(255,255,255,0.2);
-    border: none;
-    color: white;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-  }
+  .summary-strip{background:white;margin:0 16px;border-radius:16px;padding:14px 16px;margin-top:-14px;box-shadow:0 4px 20px var(--shadow);display:grid;grid-template-columns:repeat(4,1fr);gap:8px;position:relative;z-index:2;}
+  .stat-cell{text-align:center;}
+  .stat-val{font-family:'DM Serif Display',serif;font-size:20px;color:var(--terra);line-height:1;}
+  .stat-label{font-size:10px;color:#999;margin-top:2px;font-weight:500;text-transform:uppercase;letter-spacing:0.3px;}
+  .stat-divider{width:1px;background:var(--soft-peach);align-self:stretch;}
 
-  /* ── SUMMARY STRIP ── */
-  .summary-strip {
-    background: white;
-    margin: 0 16px;
-    border-radius: 16px;
-    padding: 14px 16px;
-    margin-top: -14px;
-    box-shadow: 0 4px 20px var(--shadow);
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    position: relative; z-index: 2;
-  }
-  .stat-cell {
-    text-align: center;
-  }
-  .stat-val {
-    font-family: 'DM Serif Display', serif;
-    font-size: 20px;
-    color: var(--terra);
-    line-height: 1;
-  }
-  .stat-label {
-    font-size: 10px;
-    color: #999;
-    margin-top: 2px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-  }
-  .stat-divider {
-    width: 1px;
-    background: var(--soft-peach);
-    align-self: stretch;
-  }
+  .section{padding:16px;}
+  .section-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--deep);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
 
-  /* ── DAY SCHEDULE ── */
-  .section { padding: 16px; }
-  .section-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 18px;
-    color: var(--deep);
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+  .wake-sleep-card{background:linear-gradient(135deg,var(--sky-light),var(--sage-light));border-radius:14px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .ws-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;}
+  .ws-icon{font-size:24px;}
+  .ws-time{font-family:'DM Serif Display',serif;font-size:18px;color:var(--deep);}
+  .ws-label{font-size:11px;color:#666;}
+  .night-sleep-info{text-align:center;font-size:12px;color:var(--sage);font-weight:500;}
 
-  /* ── WAKE/SLEEP CARD ── */
-  .wake-sleep-card {
-    background: linear-gradient(135deg, var(--sky-light), var(--sage-light));
-    border-radius: 14px;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-  }
-  .ws-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    cursor: pointer;
-  }
-  .ws-icon { font-size: 24px; }
-  .ws-time {
-    font-family: 'DM Serif Display', serif;
-    font-size: 18px;
-    color: var(--deep);
-  }
-  .ws-label { font-size: 11px; color: #666; }
-  .ws-divider {
-    font-size: 22px;
-    color: var(--sage);
-    opacity: 0.5;
-  }
-  .night-sleep-info {
-    text-align: center;
-    font-size: 12px;
-    color: var(--sage);
-    font-weight: 500;
-  }
+  .feed-list{display:flex;flex-direction:column;gap:10px;}
+  .feed-card{background:white;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 12px var(--shadow);transition:transform 0.15s;}
+  .feed-time-pill{background:var(--soft-peach);color:var(--terra);border-radius:10px;padding:6px 10px;font-family:'DM Serif Display',serif;font-size:17px;min-width:62px;text-align:center;flex-shrink:0;}
+  .feed-info{flex:1;}
+  .feed-ml{font-size:16px;font-weight:600;color:var(--deep);}
+  .feed-tags{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap;}
+  .tag{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;}
+  .tag-vitD{background:var(--gold);color:#5a4200;}
+  .tag-flat{background:var(--sage-light);color:#2d4d2d;}
+  .feed-actions{display:flex;gap:6px;}
+  .icon-btn{background:var(--cream);border:none;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background 0.2s;}
+  .icon-btn:hover{background:var(--soft-peach);}
+  .icon-btn.delete:hover{background:#ffe0de;}
 
-  /* ── FEED CARDS ── */
-  .feed-list { display: flex; flex-direction: column; gap: 10px; }
-  .feed-card {
-    background: white;
-    border-radius: 14px;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    box-shadow: 0 2px 12px var(--shadow);
-    position: relative;
-    transition: transform 0.15s;
-  }
-  .feed-card:active { transform: scale(0.98); }
-  .feed-time-pill {
-    background: var(--soft-peach);
-    color: var(--terra);
-    border-radius: 10px;
-    padding: 6px 10px;
-    font-family: 'DM Serif Display', serif;
-    font-size: 17px;
-    min-width: 62px;
-    text-align: center;
-    flex-shrink: 0;
-  }
-  .feed-info { flex: 1; }
-  .feed-ml {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--deep);
-  }
-  .feed-tags {
-    display: flex;
-    gap: 5px;
-    margin-top: 4px;
-    flex-wrap: wrap;
-  }
-  .tag {
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 20px;
-    font-weight: 500;
-  }
-  .tag-vitD { background: var(--gold); color: #5a4200; }
-  .tag-flat { background: var(--sage-light); color: #2d4d2d; }
-  .tag-nap { background: var(--lavender); color: #3d2a6b; }
-  .feed-actions {
-    display: flex;
-    gap: 6px;
-  }
-  .icon-btn {
-    background: var(--cream);
-    border: none;
-    width: 30px; height: 30px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.2s;
-  }
-  .icon-btn:hover { background: var(--soft-peach); }
-  .icon-btn.delete:hover { background: #ffe0de; }
+  .nap-card{background:linear-gradient(135deg,#EDE5F8,#d8ccf0);border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 12px var(--shadow);}
+  .nap-icon{font-size:22px;}
+  .nap-info{flex:1;}
+  .nap-duration{font-family:'DM Serif Display',serif;font-size:16px;color:var(--deep);}
+  .nap-time-range{font-size:12px;color:#666;margin-top:2px;}
 
-  /* ── NAP CARDS ── */
-  .nap-card {
-    background: linear-gradient(135deg, #EDE5F8, #d8ccf0);
-    border-radius: 14px;
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    box-shadow: 0 2px 12px var(--shadow);
-  }
-  .nap-icon { font-size: 22px; }
-  .nap-info { flex: 1; }
-  .nap-duration {
-    font-family: 'DM Serif Display', serif;
-    font-size: 16px;
-    color: var(--deep);
-  }
-  .nap-time-range { font-size: 12px; color: #666; margin-top: 2px; }
+  .meds-bar{background:white;border-radius:14px;padding:12px 16px;display:flex;gap:12px;margin-bottom:12px;box-shadow:0 2px 12px var(--shadow);}
+  .med-pill{flex:1;display:flex;align-items:center;gap:8px;background:var(--cream);border-radius:10px;padding:8px 12px;cursor:pointer;border:2px solid transparent;transition:all 0.2s;}
+  .med-pill.given{background:var(--sage-light);border-color:var(--sage);}
+  .med-icon{font-size:20px;}
+  .med-name{font-size:13px;font-weight:600;}
+  .med-status{font-size:10px;color:#888;}
+  .med-check{margin-left:auto;font-size:18px;}
 
-  /* ── ADD BUTTON ── */
-  .add-fab {
-    position: fixed;
-    bottom: 90px;
-    right: 20px;
-    background: linear-gradient(135deg, var(--terra), var(--blush));
-    color: white;
-    border: none;
-    width: 56px; height: 56px;
-    border-radius: 50%;
-    font-size: 26px;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(212,120,74,0.5);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 100;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  .add-fab:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(212,120,74,0.65); }
+  .since-feed-banner{background:linear-gradient(135deg,var(--soft-peach),var(--warm-sand));border-radius:14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .since-val{font-family:'DM Serif Display',serif;font-size:22px;color:var(--terra);}
+  .since-label{font-size:12px;color:#888;margin-top:2px;}
+  .since-icon{font-size:32px;opacity:0.6;}
 
-  /* ── NAV ── */
-  .bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0; right: 0;
-    background: white;
-    border-top: 1px solid var(--soft-peach);
-    display: flex;
-    padding: 6px 0 8px;
-    z-index: 99;
-  }
-  .nav-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    transition: all 0.15s;
-  }
-  .nav-icon { font-size: 20px; }
-  .nav-label { font-size: 9px; font-weight: 600; color: #bbb; text-transform: uppercase; letter-spacing: 0.4px; }
-  .nav-item.active .nav-label { color: var(--terra); }
-  .nav-item.active .nav-icon { filter: none; }
+  .page{display:none;}
+  .page.active{display:block;}
 
-  /* ── MODAL ── */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(61,35,20,0.45);
-    z-index: 200;
-    display: none;
-    align-items: flex-end;
-    justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: white;
-    border-radius: 24px 24px 0 0;
-    padding: 0 0 30px;
-    width: 100%;
-    max-width: 500px;
-    animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-  @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-  }
-  .modal-handle {
-    width: 40px; height: 4px;
-    background: #ddd;
-    border-radius: 2px;
-    margin: 12px auto 0;
-  }
-  .modal-header {
-    padding: 16px 20px 12px;
-    border-bottom: 1px solid var(--soft-peach);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .modal-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 20px;
-    color: var(--deep);
-  }
-  .modal-close {
-    background: var(--cream);
-    border: none;
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    font-size: 16px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .modal-body { padding: 16px 20px; }
+  .analysis-card{background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 12px var(--shadow);}
+  .analysis-title{font-family:'DM Serif Display',serif;font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .avg-row{display:flex;justify-content:space-around;text-align:center;}
+  .avg-val{font-family:'DM Serif Display',serif;font-size:22px;color:var(--terra);}
+  .avg-label{font-size:11px;color:#999;margin-top:2px;}
+  .bar-chart{display:flex;gap:6px;align-items:flex-end;height:80px;margin-top:8px;}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;}
+  .bar-fill{width:100%;border-radius:4px 4px 0 0;min-height:4px;}
+  .bar-label{font-size:9px;color:#aaa;}
 
-  /* ── FORM ELEMENTS ── */
-  .form-group { margin-bottom: 16px; }
-  .form-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 6px;
-    display: block;
-  }
-  .form-input {
-    width: 100%;
-    background: var(--cream);
-    border: 1.5px solid var(--warm-sand);
-    border-radius: 10px;
-    padding: 11px 14px;
-    font-size: 15px;
-    font-family: 'DM Sans', sans-serif;
-    color: var(--deep);
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .form-input:focus { border-color: var(--terra); }
-  .ml-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .ml-btn {
-    background: var(--soft-peach);
-    border: none;
-    width: 40px; height: 40px;
-    border-radius: 10px;
-    font-size: 20px;
-    cursor: pointer;
-    color: var(--terra);
-    flex-shrink: 0;
-    font-weight: 700;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .ml-display {
-    flex: 1;
-    text-align: center;
-    font-family: 'DM Serif Display', serif;
-    font-size: 28px;
-    color: var(--terra);
-  }
-  .ml-unit { font-size: 14px; color: #aaa; }
+  .growth-card{background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 12px var(--shadow);}
+  .growth-inputs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .growth-input-group{background:var(--cream);border-radius:12px;padding:12px;text-align:center;}
+  .growth-val{font-family:'DM Serif Display',serif;font-size:24px;color:var(--terra);}
+  .growth-unit{font-size:12px;color:#aaa;}
+  .growth-label{font-size:11px;color:#888;margin-top:4px;}
+  .growth-percentile{background:var(--sage-light);border-radius:10px;padding:10px 14px;text-align:center;font-size:13px;color:#2d4d2d;font-weight:500;}
+  .percentile-val{font-family:'DM Serif Display',serif;font-size:28px;color:var(--sage);display:block;}
 
-  /* ML presets */
-  .ml-presets {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-top: 8px;
-  }
-  .ml-preset {
-    background: var(--cream);
-    border: 1.5px solid var(--warm-sand);
-    border-radius: 20px;
-    padding: 4px 12px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.15s;
-    color: var(--deep);
-  }
-  .ml-preset.active {
-    background: var(--terra);
-    border-color: var(--terra);
-    color: white;
-  }
+  .history-day{background:white;border-radius:14px;margin-bottom:10px;overflow:hidden;box-shadow:0 2px 10px var(--shadow);}
+  .history-day-header{padding:12px 16px;background:var(--soft-peach);display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+  .history-day-title{font-family:'DM Serif Display',serif;font-size:15px;}
+  .history-day-sum{font-size:12px;color:var(--terra);font-weight:500;}
+  .history-day-body{padding:10px 16px;display:none;}
+  .history-day-body.open{display:block;}
+  .history-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--cream);}
+  .history-row:last-child{border-bottom:none;}
+  .history-type{font-size:16px;}
+  .history-detail{font-size:13px;color:var(--deep);}
+  .history-time{font-size:11px;color:#aaa;margin-left:auto;}
 
-  /* toggle switches */
-  .toggle-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--cream);
-    border-radius: 12px;
-    padding: 12px 14px;
-  }
-  .toggle-info { display: flex; align-items: center; gap: 10px; }
-  .toggle-emoji { font-size: 22px; }
-  .toggle-name { font-size: 15px; font-weight: 500; }
-  .toggle-desc { font-size: 11px; color: #999; }
-  .switch {
-    position: relative;
-    width: 46px; height: 26px;
-    flex-shrink: 0;
-  }
-  .switch input { opacity: 0; width: 0; height: 0; }
-  .switch-slider {
-    position: absolute;
-    inset: 0;
-    background: #ddd;
-    border-radius: 26px;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  .switch-slider::before {
-    content: '';
-    position: absolute;
-    height: 20px; width: 20px;
-    left: 3px; bottom: 3px;
-    background: white;
-    border-radius: 50%;
-    transition: transform 0.2s;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-  }
-  .switch input:checked + .switch-slider { background: var(--sage); }
-  .switch input:checked + .switch-slider::before { transform: translateX(20px); }
+  .empty{text-align:center;padding:40px 20px;color:#bbb;}
+  .empty-icon{font-size:48px;margin-bottom:8px;}
+  .empty-text{font-size:14px;}
 
-  .save-btn {
-    width: 100%;
-    background: linear-gradient(135deg, var(--terra), var(--blush));
-    color: white;
-    border: none;
-    border-radius: 14px;
-    padding: 15px;
-    font-size: 16px;
-    font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    margin-top: 6px;
-    box-shadow: 0 4px 16px rgba(212,120,74,0.4);
-    transition: transform 0.15s, box-shadow 0.15s;
-  }
-  .save-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(212,120,74,0.5); }
+  .modal-overlay{position:fixed;inset:0;background:rgba(61,35,20,0.45);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:white;border-radius:24px 24px 0 0;padding:0 0 30px;width:100%;max-width:500px;animation:slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);max-height:90vh;overflow-y:auto;}
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .modal-handle{width:40px;height:4px;background:#ddd;border-radius:2px;margin:12px auto 0;}
+  .modal-header{padding:16px 20px 12px;border-bottom:1px solid var(--soft-peach);display:flex;align-items:center;justify-content:space-between;}
+  .modal-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--deep);}
+  .modal-close{background:var(--cream);border:none;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .modal-body{padding:16px 20px;}
 
-  /* ── MEDICATION INDICATOR ── */
-  .meds-bar {
-    background: white;
-    border-radius: 14px;
-    padding: 12px 16px;
-    display: flex;
-    gap: 12px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 12px var(--shadow);
-  }
-  .med-pill {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--cream);
-    border-radius: 10px;
-    padding: 8px 12px;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: all 0.2s;
-  }
-  .med-pill.given { background: var(--sage-light); border-color: var(--sage); }
-  .med-icon { font-size: 20px; }
-  .med-name { font-size: 13px; font-weight: 600; }
-  .med-status { font-size: 10px; color: #888; }
-  .med-check { margin-left: auto; font-size: 18px; }
+  .form-group{margin-bottom:16px;}
+  .form-label{font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:block;}
+  .form-input{width:100%;background:var(--cream);border:1.5px solid var(--warm-sand);border-radius:10px;padding:11px 14px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--deep);outline:none;transition:border-color 0.2s;}
+  .form-input:focus{border-color:var(--terra);}
+  .ml-row{display:flex;align-items:center;gap:10px;}
+  .ml-btn{background:var(--soft-peach);border:none;width:40px;height:40px;border-radius:10px;font-size:20px;cursor:pointer;color:var(--terra);flex-shrink:0;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .ml-display{flex:1;text-align:center;font-family:'DM Serif Display',serif;font-size:28px;color:var(--terra);}
+  .ml-unit{font-size:14px;color:#aaa;}
+  .ml-presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+  .ml-preset{background:var(--cream);border:1.5px solid var(--warm-sand);border-radius:20px;padding:4px 12px;font-size:13px;cursor:pointer;transition:all 0.15s;color:var(--deep);}
+  .ml-preset.active{background:var(--terra);border-color:var(--terra);color:white;}
+  .toggle-group{display:flex;flex-direction:column;gap:10px;}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--cream);border-radius:12px;padding:12px 14px;}
+  .toggle-info{display:flex;align-items:center;gap:10px;}
+  .toggle-emoji{font-size:22px;}
+  .toggle-name{font-size:15px;font-weight:500;}
+  .toggle-desc{font-size:11px;color:#999;}
+  .switch{position:relative;width:46px;height:26px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;}
+  .switch-slider{position:absolute;inset:0;background:#ddd;border-radius:26px;cursor:pointer;transition:background 0.2s;}
+  .switch-slider::before{content:'';position:absolute;height:20px;width:20px;left:3px;bottom:3px;background:white;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.2);}
+  .switch input:checked + .switch-slider{background:var(--sage);}
+  .switch input:checked + .switch-slider::before{transform:translateX(20px);}
+  .save-btn{width:100%;background:linear-gradient(135deg,var(--terra),var(--blush));color:white;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:6px;box-shadow:0 4px 16px rgba(212,120,74,0.4);transition:transform 0.15s,box-shadow 0.15s;}
+  .save-btn:hover{transform:translateY(-1px);}
+  .save-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
 
-  /* ── SINCE LAST FEED ── */
-  .since-feed-banner {
-    background: linear-gradient(135deg, var(--soft-peach), var(--warm-sand));
-    border-radius: 14px;
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-  }
-  .since-val {
-    font-family: 'DM Serif Display', serif;
-    font-size: 22px;
-    color: var(--terra);
-  }
-  .since-label { font-size: 12px; color: #888; margin-top: 2px; }
-  .since-icon { font-size: 32px; opacity: 0.6; }
+  .fab-menu{position:fixed;bottom:155px;right:20px;display:none;flex-direction:column;gap:10px;z-index:99;align-items:flex-end;}
+  .fab-menu.open{display:flex;}
+  .fab-item{display:flex;align-items:center;gap:10px;animation:popIn 0.2s cubic-bezier(0.34,1.56,0.64,1);}
+  @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
+  .fab-item-label{background:white;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:500;box-shadow:0 2px 10px var(--shadow-strong);color:var(--deep);white-space:nowrap;}
+  .fab-mini{background:white;border:none;width:44px;height:44px;border-radius:50%;font-size:20px;cursor:pointer;box-shadow:0 3px 14px var(--shadow-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.15s;}
+  .add-fab{position:fixed;bottom:90px;right:20px;background:linear-gradient(135deg,var(--terra),var(--blush));color:white;border:none;width:56px;height:56px;border-radius:50%;font-size:26px;cursor:pointer;box-shadow:0 4px 20px rgba(212,120,74,0.5);display:flex;align-items:center;justify-content:center;z-index:100;transition:transform 0.2s;}
+  .fab-rotate{transition:transform 0.25s;}
+  .fab-rotate.open{transform:rotate(45deg);}
 
-  /* ── TABS ── */
-  .page { display: none; }
-  .page.active { display: block; }
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--soft-peach);display:flex;padding:6px 0 8px;z-index:99;}
+  .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:4px;}
+  .nav-icon{font-size:20px;}
+  .nav-label{font-size:9px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:0.4px;}
+  .nav-item.active .nav-label{color:var(--terra);}
 
-  /* ── ANALYSIS PAGE ── */
-  .analysis-card {
-    background: white;
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 12px var(--shadow);
-  }
-  .analysis-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 16px;
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .avg-row {
-    display: flex;
-    justify-content: space-around;
-    text-align: center;
-  }
-  .avg-val {
-    font-family: 'DM Serif Display', serif;
-    font-size: 22px;
-    color: var(--terra);
-  }
-  .avg-label { font-size: 11px; color: #999; margin-top: 2px; }
+  .settings-card{background:white;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 2px 10px var(--shadow);}
+  .settings-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--cream);}
+  .settings-row:last-child{border-bottom:none;}
 
-  /* mini bar chart */
-  .bar-chart {
-    display: flex;
-    gap: 6px;
-    align-items: flex-end;
-    height: 80px;
-    margin-top: 8px;
-  }
-  .bar-col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    height: 100%;
-    justify-content: flex-end;
-  }
-  .bar-fill {
-    width: 100%;
-    border-radius: 4px 4px 0 0;
-    transition: height 0.6s cubic-bezier(0.34,1.56,0.64,1);
-    min-height: 4px;
-  }
-  .bar-label { font-size: 9px; color: #aaa; }
+  .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--deep);color:white;padding:10px 20px;border-radius:30px;font-size:14px;z-index:500;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);white-space:nowrap;}
+  .toast.show{transform:translateX(-50%) translateY(0);}
 
-  /* ── GROWTH PAGE ── */
-  .growth-card {
-    background: white;
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 12px var(--shadow);
-  }
-  .growth-inputs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-  .growth-input-group {
-    background: var(--cream);
-    border-radius: 12px;
-    padding: 12px;
-    text-align: center;
-    cursor: pointer;
-  }
-  .growth-val {
-    font-family: 'DM Serif Display', serif;
-    font-size: 24px;
-    color: var(--terra);
-  }
-  .growth-unit { font-size: 12px; color: #aaa; }
-  .growth-label { font-size: 11px; color: #888; margin-top: 4px; }
-  .growth-percentile {
-    background: var(--sage-light);
-    border-radius: 10px;
-    padding: 10px 14px;
-    text-align: center;
-    font-size: 13px;
-    color: #2d4d2d;
-    font-weight: 500;
-  }
-  .percentile-val {
-    font-family: 'DM Serif Display', serif;
-    font-size: 28px;
-    color: var(--sage);
-    display: block;
-  }
-
-  /* ── WHO chart (simulated) ── */
-  .who-chart {
-    background: var(--cream);
-    border-radius: 12px;
-    padding: 12px;
-    margin-top: 10px;
-    position: relative;
-    height: 140px;
-    overflow: hidden;
-  }
-  .who-curve {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    top: 0;
-  }
-  .who-label-y {
-    position: absolute;
-    left: 6px;
-    top: 6px;
-    font-size: 9px;
-    color: #aaa;
-  }
-  .who-label-x {
-    position: absolute;
-    bottom: 4px;
-    right: 6px;
-    font-size: 9px;
-    color: #aaa;
-  }
-
-  /* ── HISTORY LOG ── */
-  .history-day {
-    background: white;
-    border-radius: 14px;
-    margin-bottom: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px var(--shadow);
-  }
-  .history-day-header {
-    padding: 12px 16px;
-    background: var(--soft-peach);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-  }
-  .history-day-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 15px;
-  }
-  .history-day-sum { font-size: 12px; color: var(--terra); font-weight: 500; }
-  .history-day-body {
-    padding: 10px 16px;
-    display: none;
-  }
-  .history-day-body.open { display: block; }
-  .history-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 0;
-    border-bottom: 1px solid var(--cream);
-  }
-  .history-row:last-child { border-bottom: none; }
-  .history-type { font-size: 16px; }
-  .history-detail { font-size: 13px; color: var(--deep); }
-  .history-time { font-size: 11px; color: #aaa; margin-left: auto; }
-
-  /* ── EMPTY STATE ── */
-  .empty {
-    text-align: center;
-    padding: 40px 20px;
-    color: #bbb;
-  }
-  .empty-icon { font-size: 48px; margin-bottom: 8px; }
-  .empty-text { font-size: 14px; }
-
-  /* ── add nap modal ── */
-  .time-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  /* FAB menu */
-  .fab-menu {
-    position: fixed;
-    bottom: 155px;
-    right: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 99;
-    align-items: flex-end;
-    display: none;
-  }
-  .fab-menu.open { display: flex; }
-  .fab-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    animation: popIn 0.2s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  @keyframes popIn {
-    from { transform: scale(0.5); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-  }
-  .fab-item-label {
-    background: white;
-    border-radius: 20px;
-    padding: 6px 14px;
-    font-size: 13px;
-    font-weight: 500;
-    box-shadow: 0 2px 10px var(--shadow-strong);
-    color: var(--deep);
-    white-space: nowrap;
-  }
-  .fab-mini {
-    background: white;
-    border: none;
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    font-size: 20px;
-    cursor: pointer;
-    box-shadow: 0 3px 14px var(--shadow-strong);
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    transition: transform 0.15s;
-  }
-  .fab-mini:hover { transform: scale(1.1); }
-  .fab-rotate { transition: transform 0.25s; }
-  .fab-rotate.open { transform: rotate(45deg); }
-
-  /* notifications / toasts */
-  .toast {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-80px);
-    background: var(--deep);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 30px;
-    font-size: 14px;
-    z-index: 500;
-    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    white-space: nowrap;
-  }
-  .toast.show { transform: translateX(-50%) translateY(0); }
-
-  /* ── SETTINGS / BIRTH ── */
-  .settings-card {
-    background: white;
-    border-radius: 14px;
-    padding: 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 10px var(--shadow);
-  }
-  .settings-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--cream);
-  }
-  .settings-row:last-child { border-bottom: none; }
-
-  /* quick edit time inline */
-  .time-input-inline {
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid var(--terra);
-    font-family: 'DM Serif Display', serif;
-    font-size: 18px;
-    color: var(--terra);
-    text-align: center;
-    width: 80px;
-    outline: none;
-  }
+  .loading-overlay{position:fixed;inset:0;background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity 0.4s;}
+  .loading-overlay.hidden{opacity:0;pointer-events:none;}
+  .loading-bottle{font-size:52px;animation:bounce 0.7s infinite alternate;}
+  @keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+  .loading-text{font-family:'DM Serif Display',serif;font-size:18px;color:var(--terra);margin-top:16px;}
+  .loading-sub{font-size:13px;color:#aaa;margin-top:6px;}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-bottle">🍼</div>
+  <div class="loading-text">Baby Tracker</div>
+  <div class="loading-sub">Syncing data…</div>
+</div>
+
 <div class="header">
   <div class="header-top">
     <div>
-      <h1>👶 Baby Tracker</h1>
-      <div class="header-sub" id="babyNameSub">Loading...</div>
+      <h1>👶 Baby Tracker <span class="sync-dot offline" id="syncDot"></span></h1>
+      <div class="header-sub" id="babyNameSub">Loading…</div>
     </div>
     <div style="text-align:right">
       <div style="color:white;font-size:11px;opacity:0.75">Next feed in</div>
@@ -865,97 +218,55 @@
   </div>
 </div>
 
-<!-- SUMMARY STRIP -->
 <div class="summary-strip">
-  <div class="stat-cell">
-    <div class="stat-val" id="sumMl">–</div>
-    <div class="stat-label">ml total</div>
-  </div>
+  <div class="stat-cell"><div class="stat-val" id="sumMl">–</div><div class="stat-label">ml total</div></div>
   <div class="stat-divider"></div>
-  <div class="stat-cell">
-    <div class="stat-val" id="sumFeeds">–</div>
-    <div class="stat-label">feeds</div>
-  </div>
+  <div class="stat-cell"><div class="stat-val" id="sumFeeds">–</div><div class="stat-label">feeds</div></div>
   <div class="stat-divider"></div>
-  <div class="stat-cell">
-    <div class="stat-val" id="sumNapH">–</div>
-    <div class="stat-label">nap hrs</div>
-  </div>
+  <div class="stat-cell"><div class="stat-val" id="sumNapH">–</div><div class="stat-label">nap hrs</div></div>
   <div class="stat-divider"></div>
-  <div class="stat-cell">
-    <div class="stat-val" id="sumSleepH">–</div>
-    <div class="stat-label">sleep hrs</div>
-  </div>
+  <div class="stat-cell"><div class="stat-val" id="sumSleepH">–</div><div class="stat-label">sleep hrs</div></div>
 </div>
-
-<!-- PAGES -->
 
 <!-- DAY PAGE -->
 <div class="page active" id="pageTodayEl">
-
-  <!-- Since last feed -->
   <div class="section" style="padding-bottom:0">
     <div class="since-feed-banner">
-      <div>
-        <div class="since-val" id="sinceLastFeed">–</div>
-        <div class="since-label">since last feed</div>
-      </div>
+      <div><div class="since-val" id="sinceLastFeed">–</div><div class="since-label">since last feed</div></div>
       <div class="since-icon">🍼</div>
     </div>
-
-    <!-- Meds -->
     <div class="meds-bar">
       <div class="med-pill" id="vitDPill" onclick="toggleMed('vitD')">
         <div class="med-icon">☀️</div>
-        <div>
-          <div class="med-name">Vitamin D</div>
-          <div class="med-status" id="vitDStatus">Not given today</div>
-        </div>
+        <div><div class="med-name">Vitamin D</div><div class="med-status" id="vitDStatus">Not given</div></div>
         <div class="med-check" id="vitDCheck">○</div>
       </div>
       <div class="med-pill" id="flatPill" onclick="toggleMed('flat')">
         <div class="med-icon">💨</div>
-        <div>
-          <div class="med-name">Flatulex</div>
-          <div class="med-status" id="flatStatus">Not given today</div>
-        </div>
+        <div><div class="med-name">Flatulex</div><div class="med-status" id="flatStatus">Not given</div></div>
         <div class="med-check" id="flatCheck">○</div>
       </div>
     </div>
-
-    <!-- Wake / Sleep -->
     <div class="wake-sleep-card">
       <div class="ws-item" onclick="editWakeTime()">
-        <div class="ws-icon">🌅</div>
-        <div class="ws-time" id="wakeTimeDisplay">–</div>
-        <div class="ws-label">Wake up</div>
+        <div class="ws-icon">🌅</div><div class="ws-time" id="wakeTimeDisplay">–</div><div class="ws-label">Wake up</div>
       </div>
       <div style="text-align:center">
-        <div class="ws-divider">☁️</div>
+        <div style="font-size:22px;color:var(--sage);opacity:0.5">☁️</div>
         <div class="night-sleep-info" id="nightSleepInfo">–</div>
       </div>
       <div class="ws-item" onclick="editSleepTime()">
-        <div class="ws-icon">🌙</div>
-        <div class="ws-time" id="sleepTimeDisplay">–</div>
-        <div class="ws-label">Bedtime</div>
+        <div class="ws-icon">🌙</div><div class="ws-time" id="sleepTimeDisplay">–</div><div class="ws-label">Bedtime</div>
       </div>
     </div>
   </div>
-
-  <!-- Feeds -->
   <div class="section" style="padding-top:12px">
     <div class="section-title">🍼 Feeds</div>
-    <div class="feed-list" id="feedList">
-      <div class="empty"><div class="empty-icon">🍼</div><div class="empty-text">No feeds logged yet</div></div>
-    </div>
+    <div class="feed-list" id="feedList"><div class="empty"><div class="empty-icon">🍼</div><div class="empty-text">No feeds logged yet</div></div></div>
   </div>
-
-  <!-- Naps -->
   <div class="section" style="padding-top:0">
     <div class="section-title">😴 Naps</div>
-    <div class="feed-list" id="napList">
-      <div class="empty"><div class="empty-icon">😴</div><div class="empty-text">No naps logged yet</div></div>
-    </div>
+    <div class="feed-list" id="napList"><div class="empty"><div class="empty-icon">😴</div><div class="empty-text">No naps logged yet</div></div></div>
   </div>
 </div>
 
@@ -963,7 +274,6 @@
 <div class="page" id="pageAnalysis">
   <div class="section">
     <div class="section-title">📊 Analysis <span style="font-size:13px;font-weight:400;font-family:'DM Sans',sans-serif;color:#aaa">last 7 days</span></div>
-
     <div class="analysis-card">
       <div class="analysis-title">🍼 Feeding</div>
       <div class="avg-row">
@@ -973,1000 +283,7 @@
       </div>
       <div class="bar-chart" id="mlBarChart"></div>
     </div>
-
     <div class="analysis-card">
-      <div class="analysis-title">😴 Sleep</div>
+      <div class="analysis-title">😴 Sleep & Naps</div>
       <div class="avg-row">
-        <div><div class="avg-val" id="avgSleep">–</div><div class="avg-label">avg night sleep</div></div>
-        <div><div class="avg-val" id="avgNap">–</div><div class="avg-label">avg nap time</div></div>
-      </div>
-      <div class="bar-chart" id="sleepBarChart"></div>
-    </div>
-
-    <div class="analysis-card">
-      <div class="analysis-title">⏰ Feed timing</div>
-      <div id="feedTimingList" style="display:flex;flex-direction:column;gap:6px;"></div>
-    </div>
-
-    <div class="analysis-card">
-      <div class="analysis-title">💊 Medication</div>
-      <div class="avg-row">
-        <div><div class="avg-val" id="avgVitD">–</div><div class="avg-label">Vit D days (7d)</div></div>
-        <div><div class="avg-val" id="avgFlat">–</div><div class="avg-label">Flatulex days (7d)</div></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- GROWTH PAGE -->
-<div class="page" id="pageGrowth">
-  <div class="section">
-    <div class="section-title">📏 Growth Tracking</div>
-
-    <div class="growth-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <span style="font-family:'DM Serif Display',serif;font-size:16px">Add measurement</span>
-        <button onclick="openGrowthModal()" style="background:var(--terra);color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Add</button>
-      </div>
-      <div class="growth-inputs">
-        <div class="growth-input-group" id="latestWeight">
-          <div class="growth-val" id="latestWeightVal">–</div>
-          <div class="growth-unit">kg</div>
-          <div class="growth-label">Latest weight</div>
-        </div>
-        <div class="growth-input-group" id="latestHeight">
-          <div class="growth-val" id="latestHeightVal">–</div>
-          <div class="growth-unit">cm</div>
-          <div class="growth-label">Latest height</div>
-        </div>
-      </div>
-      <div class="growth-percentile" id="percentileInfo">
-        Add measurements to see growth percentile
-      </div>
-    </div>
-
-    <div class="growth-card">
-      <div class="analysis-title">⚖️ Weight curve (WHO)</div>
-      <div class="who-chart" id="weightChart"></div>
-    </div>
-
-    <div class="growth-card">
-      <div class="analysis-title">📏 Height curve (WHO)</div>
-      <div class="who-chart" id="heightChart"></div>
-    </div>
-
-    <div class="growth-card">
-      <div class="analysis-title">📋 Measurement history</div>
-      <div id="growthHistory"></div>
-    </div>
-  </div>
-</div>
-
-<!-- HISTORY PAGE -->
-<div class="page" id="pageHistory">
-  <div class="section">
-    <div class="section-title">📅 History</div>
-    <div id="historyList"></div>
-  </div>
-</div>
-
-<!-- SETTINGS PAGE -->
-<div class="page" id="pageSettings">
-  <div class="section">
-    <div class="section-title">⚙️ Settings</div>
-    <div class="settings-card">
-      <div class="settings-row">
-        <span>Baby's name</span>
-        <input class="form-input" id="babyNameInput" style="width:140px;text-align:right" placeholder="Baby" oninput="saveSetting('babyName',this.value)">
-      </div>
-      <div class="settings-row">
-        <span>Date of birth</span>
-        <input class="form-input" type="date" id="dobInput" style="width:160px" onchange="saveSetting('dob',this.value)">
-      </div>
-      <div class="settings-row">
-        <span>Gender</span>
-        <select class="form-input" id="genderInput" style="width:110px" onchange="saveSetting('gender',this.value)">
-          <option value="">–</option>
-          <option value="girl">Girl</option>
-          <option value="boy">Boy</option>
-        </select>
-      </div>
-      <div class="settings-row">
-        <span>Typical feed interval</span>
-        <div>
-          <input class="form-input" type="number" id="feedIntervalInput" style="width:60px;text-align:center" value="3" min="1" max="6" onchange="saveSetting('feedInterval',this.value)"> h
-        </div>
-      </div>
-    </div>
-
-    <div style="padding:10px 0;color:#bbb;font-size:12px;text-align:center">
-      All data stored locally on this device
-    </div>
-    <button onclick="clearAllData()" style="width:100%;background:#ffe0de;color:#c0392b;border:none;border-radius:12px;padding:12px;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600">
-      🗑 Clear all data
-    </button>
-  </div>
-</div>
-
-<!-- FAB MENU -->
-<div class="fab-menu" id="fabMenu">
-  <div class="fab-item">
-    <div class="fab-item-label">Add nap</div>
-    <button class="fab-mini" onclick="openNapModal()">😴</button>
-  </div>
-  <div class="fab-item">
-    <div class="fab-item-label">Log feed</div>
-    <button class="fab-mini" onclick="openFeedModal()">🍼</button>
-  </div>
-</div>
-
-<!-- FAB -->
-<button class="add-fab" id="fabBtn" onclick="toggleFab()">
-  <span class="fab-rotate" id="fabIcon">+</span>
-</button>
-
-<!-- BOTTOM NAV -->
-<div class="bottom-nav">
-  <button class="nav-item active" onclick="showPage('pageToday','navToday')" id="navToday">
-    <div class="nav-icon">📋</div>
-    <div class="nav-label">Today</div>
-  </button>
-  <button class="nav-item" onclick="showPage('pageAnalysis','navAnalysis')" id="navAnalysis">
-    <div class="nav-icon">📊</div>
-    <div class="nav-label">Analysis</div>
-  </button>
-  <button class="nav-item" onclick="showPage('pageGrowth','navGrowth')" id="navGrowth">
-    <div class="nav-icon">📏</div>
-    <div class="nav-label">Growth</div>
-  </button>
-  <button class="nav-item" onclick="showPage('pageHistory','navHistory')" id="navHistory">
-    <div class="nav-icon">📅</div>
-    <div class="nav-label">History</div>
-  </button>
-  <button class="nav-item" onclick="showPage('pageSettings','navSettings')" id="navSettings">
-    <div class="nav-icon">⚙️</div>
-    <div class="nav-label">Settings</div>
-  </button>
-</div>
-
-<!-- FEED MODAL -->
-<div class="modal-overlay" id="feedModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div class="modal-title" id="feedModalTitle">Log Feed 🍼</div>
-      <button class="modal-close" onclick="closeFeedModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">Time</label>
-        <input class="form-input" type="time" id="feedTimeInput">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Amount (ml)</label>
-        <div class="ml-row">
-          <button class="ml-btn" onclick="changeMl(-10)">−</button>
-          <div class="ml-display"><span id="mlDisplay">120</span><span class="ml-unit"> ml</span></div>
-          <button class="ml-btn" onclick="changeMl(10)">+</button>
-        </div>
-        <div class="ml-presets">
-          <button class="ml-preset" onclick="setMl(60)">60</button>
-          <button class="ml-preset" onclick="setMl(90)">90</button>
-          <button class="ml-preset active" onclick="setMl(120)">120</button>
-          <button class="ml-preset" onclick="setMl(150)">150</button>
-          <button class="ml-preset" onclick="setMl(180)">180</button>
-          <button class="ml-preset" onclick="setMl(210)">210</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Supplements</label>
-        <div class="toggle-group">
-          <div class="toggle-row">
-            <div class="toggle-info">
-              <div class="toggle-emoji">☀️</div>
-              <div>
-                <div class="toggle-name">Vitamin D</div>
-                <div class="toggle-desc">400 IU drop</div>
-              </div>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="vitDToggle">
-              <span class="switch-slider"></span>
-            </label>
-          </div>
-          <div class="toggle-row">
-            <div class="toggle-info">
-              <div class="toggle-emoji">💨</div>
-              <div>
-                <div class="toggle-name">Flatulex</div>
-                <div class="toggle-desc">Gas relief drops</div>
-              </div>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="flatToggle">
-              <span class="switch-slider"></span>
-            </label>
-          </div>
-        </div>
-      </div>
-      <button class="save-btn" onclick="saveFeed()">Save Feed</button>
-    </div>
-  </div>
-</div>
-
-<!-- NAP MODAL -->
-<div class="modal-overlay" id="napModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div class="modal-title">Log Nap 😴</div>
-      <button class="modal-close" onclick="closeNapModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">Start time</label>
-        <input class="form-input" type="time" id="napStartInput">
-      </div>
-      <div class="form-group">
-        <label class="form-label">End time</label>
-        <input class="form-input" type="time" id="napEndInput">
-      </div>
-      <button class="save-btn" onclick="saveNap()">Save Nap</button>
-    </div>
-  </div>
-</div>
-
-<!-- WAKE/SLEEP MODAL -->
-<div class="modal-overlay" id="wsModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div class="modal-title" id="wsModalTitle">Set time</div>
-      <button class="modal-close" onclick="closeWsModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label" id="wsModalLabel">Time</label>
-        <input class="form-input" type="time" id="wsTimeInput">
-      </div>
-      <button class="save-btn" onclick="saveWsTime()">Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- GROWTH MODAL -->
-<div class="modal-overlay" id="growthModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div class="modal-title">Add Measurement 📏</div>
-      <button class="modal-close" onclick="closeGrowthModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">Date</label>
-        <input class="form-input" type="date" id="growthDateInput">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Weight (kg)</label>
-        <input class="form-input" type="number" id="growthWeightInput" step="0.01" placeholder="e.g. 4.25">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Height (cm)</label>
-        <input class="form-input" type="number" id="growthHeightInput" step="0.1" placeholder="e.g. 55.0">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Head circumference (cm)</label>
-        <input class="form-input" type="number" id="growthHCInput" step="0.1" placeholder="optional">
-      </div>
-      <button class="save-btn" onclick="saveGrowth()">Save Measurement</button>
-    </div>
-  </div>
-</div>
-
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
-
-<script>
-// ─── STATE ───────────────────────────────────────────────────────────────────
-let currentDateKey = todayKey();
-let editingFeedId = null;
-let wsModeEditing = null; // 'wake' or 'sleep'
-let currentMl = 120;
-let fabOpen = false;
-
-function todayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-
-// ─── STORAGE ─────────────────────────────────────────────────────────────────
-function load(key, def = null) {
-  try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : def; } catch { return def; }
-}
-function save(key, val) {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
-}
-
-function getDayData(dateKey) {
-  return load(`bt_day_${dateKey}`, {
-    feeds: [],
-    naps: [],
-    wakeTime: null,
-    sleepTime: null,
-    vitDGiven: false,
-    flatGiven: false
-  });
-}
-function saveDayData(dateKey, data) {
-  save(`bt_day_${dateKey}`, data);
-  // also update the index of days that have data
-  const idx = load('bt_days_index', []);
-  if (!idx.includes(dateKey)) { idx.push(dateKey); idx.sort(); save('bt_days_index', idx); }
-}
-
-function getSettings() {
-  return load('bt_settings', { babyName: '', dob: '', gender: '', feedInterval: 3 });
-}
-function saveSetting(k, v) {
-  const s = getSettings(); s[k] = v; save('bt_settings', s);
-  updateHeaderName();
-}
-
-// ─── NAV ─────────────────────────────────────────────────────────────────────
-function showPage(pageId, navId) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById(pageId + 'El') || document.getElementById(pageId);
-  const pg = document.getElementById(pageId === 'pageToday' ? 'pageTodayEl' : pageId);
-  if (pg) pg.classList.add('active');
-  document.getElementById(navId)?.classList.add('active');
-  // FAB visible only on today
-  document.getElementById('fabBtn').style.display = pageId === 'pageToday' ? 'flex' : 'none';
-
-  if (pageId === 'pageAnalysis') renderAnalysis();
-  if (pageId === 'pageGrowth') renderGrowth();
-  if (pageId === 'pageHistory') renderHistory();
-  if (pageId === 'pageSettings') loadSettings();
-}
-
-// ─── DATE NAV ────────────────────────────────────────────────────────────────
-function changeDay(delta) {
-  const d = new Date(currentDateKey + 'T12:00:00');
-  d.setDate(d.getDate() + delta);
-  currentDateKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  renderDay();
-}
-function goToday() {
-  currentDateKey = todayKey();
-  renderDay();
-}
-
-function formatDateLabel(key) {
-  const d = new Date(key + 'T12:00:00');
-  const today = todayKey();
-  const yest = (() => { const y = new Date(); y.setDate(y.getDate()-1); return `${y.getFullYear()}-${String(y.getMonth()+1).padStart(2,'0')}-${String(y.getDate()).padStart(2,'0')}`; })();
-  if (key === today) return 'Today · ' + d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
-  if (key === yest) return 'Yesterday · ' + d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
-  return d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
-}
-
-// ─── RENDER DAY ──────────────────────────────────────────────────────────────
-function renderDay() {
-  document.getElementById('dateLabelEl').textContent = formatDateLabel(currentDateKey);
-  const data = getDayData(currentDateKey);
-
-  // Summary strip
-  const totalMl = data.feeds.reduce((s,f) => s + f.ml, 0);
-  document.getElementById('sumMl').textContent = totalMl || '–';
-  document.getElementById('sumFeeds').textContent = data.feeds.length || '–';
-
-  const totalNapMin = data.naps.reduce((s,n) => s + napDuration(n), 0);
-  document.getElementById('sumNapH').textContent = totalNapMin ? (totalNapMin/60).toFixed(1) : '–';
-
-  const nightMin = calcNightSleep(data);
-  document.getElementById('sumSleepH').textContent = nightMin ? (nightMin/60).toFixed(1) : '–';
-
-  // Since last feed
-  if (data.feeds.length > 0 && currentDateKey === todayKey()) {
-    const sorted = [...data.feeds].sort((a,b) => a.time.localeCompare(b.time));
-    const last = sorted[sorted.length-1];
-    const [h,m] = last.time.split(':').map(Number);
-    const now = new Date();
-    const lastDt = new Date(); lastDt.setHours(h,m,0,0);
-    const diffMin = Math.floor((now - lastDt) / 60000);
-    if (diffMin >= 0) {
-      const hh = Math.floor(diffMin/60), mm = diffMin%60;
-      document.getElementById('sinceLastFeed').textContent = `${hh}h ${mm}m`;
-      // header
-      const settings = getSettings();
-      const intervalMin = (settings.feedInterval || 3) * 60;
-      const remaining = intervalMin - diffMin;
-      if (remaining > 0) {
-        const rh = Math.floor(remaining/60), rm = remaining%60;
-        document.getElementById('headerNextFeed').textContent = `${rh}h ${rm}m`;
-      } else {
-        document.getElementById('headerNextFeed').textContent = 'Now!';
-      }
-    } else {
-      document.getElementById('sinceLastFeed').textContent = '–';
-    }
-  } else {
-    document.getElementById('sinceLastFeed').textContent = '–';
-    document.getElementById('headerNextFeed').textContent = '–';
-  }
-
-  // Meds
-  updateMedUI(data);
-
-  // Wake/sleep
-  document.getElementById('wakeTimeDisplay').textContent = data.wakeTime || '–';
-  document.getElementById('sleepTimeDisplay').textContent = data.sleepTime || '–';
-  if (nightMin) {
-    const h = Math.floor(nightMin/60), m = nightMin%60;
-    document.getElementById('nightSleepInfo').textContent = `${h}h ${m}m night sleep`;
-  } else {
-    document.getElementById('nightSleepInfo').textContent = '–';
-  }
-
-  // Feed list
-  renderFeedList(data);
-  renderNapList(data);
-}
-
-function calcNightSleep(data) {
-  if (!data.wakeTime) return 0;
-  // if prev day has sleepTime, use that; else ignore
-  const prevKey = getPrevDayKey(currentDateKey);
-  const prevData = getDayData(prevKey);
-  if (prevData.sleepTime && data.wakeTime) {
-    const [sh, sm] = prevData.sleepTime.split(':').map(Number);
-    const [wh, wm] = data.wakeTime.split(':').map(Number);
-    let sleepMin = sh*60+sm;
-    let wakeMin = wh*60+wm + 24*60; // next day
-    return wakeMin - sleepMin;
-  }
-  return 0;
-}
-
-function getPrevDayKey(key) {
-  const d = new Date(key + 'T12:00:00');
-  d.setDate(d.getDate()-1);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-
-function napDuration(nap) {
-  const [sh,sm] = nap.start.split(':').map(Number);
-  const [eh,em] = nap.end.split(':').map(Number);
-  return Math.max(0, (eh*60+em) - (sh*60+sm));
-}
-
-function updateMedUI(data) {
-  const vitD = data.vitDGiven;
-  const flat = data.flatGiven;
-  document.getElementById('vitDPill').className = 'med-pill' + (vitD ? ' given' : '');
-  document.getElementById('flatPill').className = 'med-pill' + (flat ? ' given' : '');
-  document.getElementById('vitDStatus').textContent = vitD ? '✓ Given today' : 'Not given today';
-  document.getElementById('flatStatus').textContent = flat ? '✓ Given today' : 'Not given today';
-  document.getElementById('vitDCheck').textContent = vitD ? '✅' : '○';
-  document.getElementById('flatCheck').textContent = flat ? '✅' : '○';
-}
-
-function renderFeedList(data) {
-  const el = document.getElementById('feedList');
-  if (!data.feeds.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">🍼</div><div class="empty-text">No feeds logged yet</div></div>';
-    return;
-  }
-  const sorted = [...data.feeds].sort((a,b) => a.time.localeCompare(b.time));
-  el.innerHTML = sorted.map(f => `
-    <div class="feed-card">
-      <div class="feed-time-pill">${f.time}</div>
-      <div class="feed-info">
-        <div class="feed-ml">${f.ml} ml</div>
-        <div class="feed-tags">
-          ${f.vitD ? '<span class="tag tag-vitD">☀️ Vit D</span>' : ''}
-          ${f.flat ? '<span class="tag tag-flat">💨 Flatulex</span>' : ''}
-        </div>
-      </div>
-      <div class="feed-actions">
-        <button class="icon-btn" onclick="editFeed('${f.id}')">✏️</button>
-        <button class="icon-btn delete" onclick="deleteFeed('${f.id}')">🗑</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function renderNapList(data) {
-  const el = document.getElementById('napList');
-  if (!data.naps.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">😴</div><div class="empty-text">No naps logged yet</div></div>';
-    return;
-  }
-  const sorted = [...data.naps].sort((a,b) => a.start.localeCompare(b.start));
-  el.innerHTML = sorted.map(n => {
-    const dur = napDuration(n);
-    const h = Math.floor(dur/60), m = dur%60;
-    return `
-    <div class="nap-card">
-      <div class="nap-icon">😴</div>
-      <div class="nap-info">
-        <div class="nap-duration">${h > 0 ? h+'h ' : ''}${m}m</div>
-        <div class="nap-time-range">${n.start} → ${n.end}</div>
-      </div>
-      <div class="feed-actions">
-        <button class="icon-btn delete" onclick="deleteNap('${n.id}')">🗑</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// ─── FEED MODAL ───────────────────────────────────────────────────────────────
-function openFeedModal(feedId = null) {
-  closeFab();
-  editingFeedId = feedId;
-  const modal = document.getElementById('feedModal');
-  modal.classList.add('open');
-
-  if (feedId) {
-    const data = getDayData(currentDateKey);
-    const feed = data.feeds.find(f => f.id === feedId);
-    document.getElementById('feedModalTitle').textContent = 'Edit Feed 🍼';
-    document.getElementById('feedTimeInput').value = feed.time;
-    setMl(feed.ml);
-    document.getElementById('vitDToggle').checked = feed.vitD;
-    document.getElementById('flatToggle').checked = feed.flat;
-  } else {
-    document.getElementById('feedModalTitle').textContent = 'Log Feed 🍼';
-    // default to current time
-    const now = new Date();
-    document.getElementById('feedTimeInput').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    setMl(120);
-    document.getElementById('vitDToggle').checked = false;
-    document.getElementById('flatToggle').checked = false;
-  }
-}
-function closeFeedModal() {
-  document.getElementById('feedModal').classList.remove('open');
-  editingFeedId = null;
-}
-function saveFeed() {
-  const time = document.getElementById('feedTimeInput').value;
-  if (!time) { showToast('Please set a time'); return; }
-  const data = getDayData(currentDateKey);
-  if (editingFeedId) {
-    const idx = data.feeds.findIndex(f => f.id === editingFeedId);
-    if (idx >= 0) {
-      data.feeds[idx] = { ...data.feeds[idx], time, ml: currentMl, vitD: document.getElementById('vitDToggle').checked, flat: document.getElementById('flatToggle').checked };
-    }
-  } else {
-    const feed = { id: Date.now().toString(), time, ml: currentMl, vitD: document.getElementById('vitDToggle').checked, flat: document.getElementById('flatToggle').checked };
-    data.feeds.push(feed);
-    // auto-mark meds
-    if (feed.vitD) data.vitDGiven = true;
-    if (feed.flat) data.flatGiven = true;
-  }
-  saveDayData(currentDateKey, data);
-  closeFeedModal();
-  renderDay();
-  showToast('Feed saved ✓');
-}
-function editFeed(id) { openFeedModal(id); }
-function deleteFeed(id) {
-  const data = getDayData(currentDateKey);
-  data.feeds = data.feeds.filter(f => f.id !== id);
-  saveDayData(currentDateKey, data);
-  renderDay();
-  showToast('Feed deleted');
-}
-
-function changeMl(delta) {
-  setMl(Math.max(10, currentMl + delta));
-}
-function setMl(val) {
-  currentMl = val;
-  document.getElementById('mlDisplay').textContent = val;
-  document.querySelectorAll('.ml-preset').forEach(b => {
-    b.classList.toggle('active', parseInt(b.textContent) === val);
-  });
-}
-
-// ─── NAP MODAL ───────────────────────────────────────────────────────────────
-function openNapModal() {
-  closeFab();
-  const now = new Date();
-  const h = String(now.getHours()).padStart(2,'0');
-  const m = String(now.getMinutes()).padStart(2,'0');
-  document.getElementById('napStartInput').value = `${h}:${m}`;
-  document.getElementById('napEndInput').value = `${h}:${m}`;
-  document.getElementById('napModal').classList.add('open');
-}
-function closeNapModal() { document.getElementById('napModal').classList.remove('open'); }
-function saveNap() {
-  const start = document.getElementById('napStartInput').value;
-  const end = document.getElementById('napEndInput').value;
-  if (!start || !end) { showToast('Set start and end'); return; }
-  const data = getDayData(currentDateKey);
-  data.naps.push({ id: Date.now().toString(), start, end });
-  saveDayData(currentDateKey, data);
-  closeNapModal();
-  renderDay();
-  showToast('Nap saved ✓');
-}
-function deleteNap(id) {
-  const data = getDayData(currentDateKey);
-  data.naps = data.naps.filter(n => n.id !== id);
-  saveDayData(currentDateKey, data);
-  renderDay();
-  showToast('Nap deleted');
-}
-
-// ─── WAKE/SLEEP ───────────────────────────────────────────────────────────────
-function editWakeTime() {
-  wsModeEditing = 'wake';
-  const data = getDayData(currentDateKey);
-  document.getElementById('wsModalTitle').textContent = 'Wake up time 🌅';
-  document.getElementById('wsModalLabel').textContent = 'Wake up time';
-  document.getElementById('wsTimeInput').value = data.wakeTime || '';
-  document.getElementById('wsModal').classList.add('open');
-}
-function editSleepTime() {
-  wsModeEditing = 'sleep';
-  const data = getDayData(currentDateKey);
-  document.getElementById('wsModalTitle').textContent = 'Bedtime 🌙';
-  document.getElementById('wsModalLabel').textContent = 'Bedtime';
-  document.getElementById('wsTimeInput').value = data.sleepTime || '';
-  document.getElementById('wsModal').classList.add('open');
-}
-function closeWsModal() { document.getElementById('wsModal').classList.remove('open'); wsModeEditing = null; }
-function saveWsTime() {
-  const t = document.getElementById('wsTimeInput').value;
-  if (!t) { showToast('Please set a time'); return; }
-  const data = getDayData(currentDateKey);
-  if (wsModeEditing === 'wake') data.wakeTime = t;
-  else data.sleepTime = t;
-  saveDayData(currentDateKey, data);
-  closeWsModal();
-  renderDay();
-  showToast(wsModeEditing === 'wake' ? 'Wake time saved ✓' : 'Bedtime saved ✓');
-}
-
-// ─── MEDS ─────────────────────────────────────────────────────────────────────
-function toggleMed(med) {
-  const data = getDayData(currentDateKey);
-  if (med === 'vitD') data.vitDGiven = !data.vitDGiven;
-  else data.flatGiven = !data.flatGiven;
-  saveDayData(currentDateKey, data);
-  updateMedUI(data);
-}
-
-// ─── FAB ─────────────────────────────────────────────────────────────────────
-function toggleFab() {
-  fabOpen = !fabOpen;
-  document.getElementById('fabMenu').classList.toggle('open', fabOpen);
-  document.getElementById('fabIcon').classList.toggle('open', fabOpen);
-}
-function closeFab() {
-  fabOpen = false;
-  document.getElementById('fabMenu').classList.remove('open');
-  document.getElementById('fabIcon').classList.remove('open');
-}
-
-// ─── ANALYSIS ────────────────────────────────────────────────────────────────
-function renderAnalysis() {
-  const days = getLast7Days();
-  const allData = days.map(k => ({ key: k, data: getDayData(k) }));
-
-  // ml averages
-  const mlVals = allData.map(d => d.data.feeds.reduce((s,f)=>s+f.ml,0));
-  const feedCounts = allData.map(d => d.data.feeds.length);
-  const avgMl = mlVals.filter(v=>v>0).length ? Math.round(mlVals.filter(v=>v>0).reduce((s,v)=>s+v,0)/mlVals.filter(v=>v>0).length) : 0;
-  const avgFeeds = feedCounts.filter(v=>v>0).length ? (feedCounts.filter(v=>v>0).reduce((s,v)=>s+v,0)/feedCounts.filter(v=>v>0).length).toFixed(1) : 0;
-
-  // Between feeds
-  let betweenHours = [];
-  allData.forEach(d => {
-    const feeds = [...d.data.feeds].sort((a,b)=>a.time.localeCompare(b.time));
-    for (let i=1; i<feeds.length; i++) {
-      const [ah,am] = feeds[i-1].time.split(':').map(Number);
-      const [bh,bm] = feeds[i].time.split(':').map(Number);
-      const diff = (bh*60+bm)-(ah*60+am);
-      if (diff > 0) betweenHours.push(diff/60);
-    }
-  });
-  const avgBetween = betweenHours.length ? (betweenHours.reduce((s,v)=>s+v,0)/betweenHours.length).toFixed(1) : 0;
-
-  document.getElementById('avgMl').textContent = avgMl || '–';
-  document.getElementById('avgFeeds').textContent = avgFeeds || '–';
-  document.getElementById('avgBetween').textContent = avgBetween ? avgBetween+'h' : '–';
-
-  // Sleep
-  const sleepVals = allData.map(d => {
-    const prevData = getDayData(getPrevDayKey(d.key));
-    if (prevData.sleepTime && d.data.wakeTime) {
-      const [sh,sm] = prevData.sleepTime.split(':').map(Number);
-      const [wh,wm] = d.data.wakeTime.split(':').map(Number);
-      return (wh*60+wm+24*60) - (sh*60+sm);
-    }
-    return 0;
-  });
-  const napVals = allData.map(d => d.data.naps.reduce((s,n)=>s+napDuration(n),0));
-  const avgSleepMin = sleepVals.filter(v=>v>0).length ? Math.round(sleepVals.filter(v=>v>0).reduce((s,v)=>s+v,0)/sleepVals.filter(v=>v>0).length) : 0;
-  const avgNapMin = napVals.filter(v=>v>0).length ? Math.round(napVals.filter(v=>v>0).reduce((s,v)=>s+v,0)/napVals.filter(v=>v>0).length) : 0;
-
-  document.getElementById('avgSleep').textContent = avgSleepMin ? fmtDur(avgSleepMin) : '–';
-  document.getElementById('avgNap').textContent = avgNapMin ? fmtDur(avgNapMin) : '–';
-
-  // Bar charts
-  renderBarChart('mlBarChart', mlVals, days, '#F2A97E', 'ml');
-  renderBarChart('sleepBarChart', sleepVals.map(v=>v/60), days, '#A8C8E8', 'h');
-
-  // Meds
-  const vitDDays = allData.filter(d=>d.data.vitDGiven).length;
-  const flatDays = allData.filter(d=>d.data.flatGiven).length;
-  document.getElementById('avgVitD').textContent = `${vitDDays}/7`;
-  document.getElementById('avgFlat').textContent = `${flatDays}/7`;
-
-  // Feed timing
-  const timingEl = document.getElementById('feedTimingList');
-  const allFeeds = [];
-  allData.forEach(d => d.data.feeds.forEach(f => allFeeds.push(f.time)));
-  if (allFeeds.length) {
-    const hours = allFeeds.map(t => parseInt(t.split(':')[0]));
-    const hourCounts = {};
-    hours.forEach(h => { hourCounts[h] = (hourCounts[h]||0)+1; });
-    const sorted = Object.entries(hourCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
-    timingEl.innerHTML = sorted.map(([h,c]) => `
-      <div style="display:flex;align-items:center;gap:10px;padding:4px 0">
-        <span style="font-size:13px;width:60px;color:#888">${String(h).padStart(2,'0')}:00</span>
-        <div style="flex:1;background:var(--cream);border-radius:6px;height:10px;overflow:hidden">
-          <div style="height:100%;width:${Math.round(c/allData.length*100)}%;background:var(--blush);border-radius:6px"></div>
-        </div>
-        <span style="font-size:12px;color:var(--terra);width:30px;text-align:right">${c}x</span>
-      </div>
-    `).join('');
-  } else {
-    timingEl.innerHTML = '<div style="color:#bbb;font-size:13px;text-align:center;padding:10px">Not enough data yet</div>';
-  }
-}
-
-function renderBarChart(elId, vals, days, color, unit) {
-  const el = document.getElementById(elId);
-  const max = Math.max(...vals, 1);
-  el.innerHTML = vals.map((v, i) => {
-    const h = Math.max(4, Math.round((v/max)*70));
-    const d = new Date(days[i] + 'T12:00:00');
-    const label = d.toLocaleDateString('en-GB', {weekday:'narrow'});
-    return `<div class="bar-col">
-      <div class="bar-fill" style="height:${h}px;background:${color}"></div>
-      <div class="bar-label">${label}</div>
-    </div>`;
-  }).join('');
-}
-
-function getLast7Days() {
-  const days = [];
-  for (let i=6; i>=0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate()-i);
-    days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
-  }
-  return days;
-}
-
-function fmtDur(min) {
-  const h = Math.floor(min/60), m = min%60;
-  return h > 0 ? `${h}h${m ? m+'m' : ''}` : `${m}m`;
-}
-
-// ─── GROWTH ──────────────────────────────────────────────────────────────────
-function renderGrowth() {
-  const measurements = load('bt_growth', []);
-  if (measurements.length > 0) {
-    const latest = measurements[measurements.length-1];
-    document.getElementById('latestWeightVal').textContent = latest.weight || '–';
-    document.getElementById('latestHeightVal').textContent = latest.height || '–';
-
-    // Rough WHO percentile estimate (simplified)
-    const settings = getSettings();
-    if (settings.dob && latest.weight) {
-      const ageWeeks = Math.round((new Date() - new Date(settings.dob)) / (7*24*3600*1000));
-      const pct = estimatePercentile(latest.weight, ageWeeks, settings.gender || 'girl', 'weight');
-      document.getElementById('percentileInfo').innerHTML = `
-        <span class="percentile-val">${pct}th</span>
-        percentile for weight · WHO growth chart
-      `;
-    }
-  }
-
-  renderGrowthHistory(measurements);
-  renderWHOChart('weightChart', measurements, 'weight', '#F2A97E');
-  renderWHOChart('heightChart', measurements, 'height', '#A8C8E8');
-}
-
-function estimatePercentile(val, ageWeeks, gender, type) {
-  // Simplified WHO lookup (approximate median for weight kg at different ages)
-  const medianWeight = { 0:3.3, 4:4.5, 8:5.6, 12:6.4, 16:7.0, 20:7.5, 24:7.9 };
-  const keys = Object.keys(medianWeight).map(Number).sort((a,b)=>a-b);
-  const closest = keys.reduce((p,k) => Math.abs(k-ageWeeks) < Math.abs(p-ageWeeks) ? k : p, keys[0]);
-  const median = medianWeight[closest] || 5;
-  const ratio = val / median;
-  if (ratio > 1.15) return 75;
-  if (ratio > 1.05) return 60;
-  if (ratio > 0.95) return 50;
-  if (ratio > 0.85) return 35;
-  return 20;
-}
-
-function renderGrowthHistory(measurements) {
-  const el = document.getElementById('growthHistory');
-  if (!measurements.length) {
-    el.innerHTML = '<div style="color:#bbb;font-size:13px;text-align:center;padding:10px">No measurements yet</div>';
-    return;
-  }
-  el.innerHTML = [...measurements].reverse().map(m => `
-    <div class="history-row">
-      <div class="history-type">📅</div>
-      <div class="history-detail">
-        ${m.date} &nbsp;·&nbsp; ${m.weight ? m.weight+'kg' : ''} ${m.height ? m.height+'cm' : ''}
-      </div>
-      <button onclick="deleteGrowth('${m.id}')" style="background:none;border:none;font-size:16px;cursor:pointer;color:#ccc">🗑</button>
-    </div>
-  `).join('');
-}
-
-function renderWHOChart(elId, measurements, field, color) {
-  const el = document.getElementById(elId);
-  if (!measurements.length) {
-    el.innerHTML = '<div style="color:#bbb;font-size:12px;text-align:center;padding:30px 0">No data yet</div>';
-    return;
-  }
-  // Simple SVG mini chart
-  const vals = measurements.filter(m=>m[field]).map(m=>({ x: measurements.indexOf(m), v: parseFloat(m[field]) }));
-  if (!vals.length) { el.innerHTML = '<div style="color:#bbb;font-size:12px;text-align:center;padding:30px">No data</div>'; return; }
-  const minV = Math.min(...vals.map(v=>v.v));
-  const maxV = Math.max(...vals.map(v=>v.v));
-  const range = maxV - minV || 1;
-  const W = 280, H = 100;
-  const pts = vals.map(v => `${Math.round((v.x/(measurements.length-1||1))*W)},${Math.round(H - ((v.v-minV)/range)*(H-20)-10)}`).join(' ');
-  el.innerHTML = `
-    <svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible">
-      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      ${vals.map((v,i) => `<circle cx="${Math.round((v.x/(measurements.length-1||1))*W)}" cy="${Math.round(H-((v.v-minV)/range)*(H-20)-10)}" r="4" fill="${color}"/>`).join('')}
-      <text x="2" y="12" font-size="9" fill="#bbb">${maxV} ${field==='weight'?'kg':'cm'}</text>
-      <text x="2" y="${H-2}" font-size="9" fill="#bbb">${minV}</text>
-    </svg>
-  `;
-}
-
-function openGrowthModal() {
-  const today = new Date();
-  document.getElementById('growthDateInput').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  document.getElementById('growthWeightInput').value = '';
-  document.getElementById('growthHeightInput').value = '';
-  document.getElementById('growthHCInput').value = '';
-  document.getElementById('growthModal').classList.add('open');
-}
-function closeGrowthModal() { document.getElementById('growthModal').classList.remove('open'); }
-function saveGrowth() {
-  const m = {
-    id: Date.now().toString(),
-    date: document.getElementById('growthDateInput').value,
-    weight: document.getElementById('growthWeightInput').value,
-    height: document.getElementById('growthHeightInput').value,
-    hc: document.getElementById('growthHCInput').value
-  };
-  if (!m.date) { showToast('Please set a date'); return; }
-  const all = load('bt_growth', []);
-  all.push(m);
-  all.sort((a,b)=>a.date.localeCompare(b.date));
-  save('bt_growth', all);
-  closeGrowthModal();
-  renderGrowth();
-  showToast('Measurement saved ✓');
-}
-function deleteGrowth(id) {
-  const all = load('bt_growth', []).filter(m=>m.id!==id);
-  save('bt_growth', all);
-  renderGrowth();
-}
-
-// ─── HISTORY ─────────────────────────────────────────────────────────────────
-function renderHistory() {
-  const idx = load('bt_days_index', []).sort().reverse();
-  const el = document.getElementById('historyList');
-  if (!idx.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No history yet</div></div>';
-    return;
-  }
-  el.innerHTML = idx.map(key => {
-    const data = getDayData(key);
-    const totalMl = data.feeds.reduce((s,f)=>s+f.ml,0);
-    const totalNap = data.naps.reduce((s,n)=>s+napDuration(n),0);
-    const d = new Date(key+'T12:00:00');
-    const label = d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-    return `
-    <div class="history-day">
-      <div class="history-day-header" onclick="toggleHistoryDay('${key}')">
-        <div class="history-day-title">${label}</div>
-        <div class="history-day-sum">${data.feeds.length} feeds · ${totalMl}ml${totalNap ? ' · '+fmtDur(totalNap)+' nap' : ''}</div>
-      </div>
-      <div class="history-day-body" id="hist_${key}">
-        ${data.wakeTime ? `<div class="history-row"><span class="history-type">🌅</span><span class="history-detail">Wake: ${data.wakeTime}</span></div>` : ''}
-        ${[...data.feeds].sort((a,b)=>a.time.localeCompare(b.time)).map(f=>`
-          <div class="history-row">
-            <span class="history-type">🍼</span>
-            <span class="history-detail">${f.ml}ml${f.vitD?' ☀️':''}${f.flat?' 💨':''}</span>
-            <span class="history-time">${f.time}</span>
-          </div>`).join('')}
-        ${[...data.naps].sort((a,b)=>a.start.localeCompare(b.start)).map(n=>`
-          <div class="history-row">
-            <span class="history-type">😴</span>
-            <span class="history-detail">Nap ${fmtDur(napDuration(n))}</span>
-            <span class="history-time">${n.start}–${n.end}</span>
-          </div>`).join('')}
-        ${data.sleepTime ? `<div class="history-row"><span class="history-type">🌙</span><span class="history-detail">Bed: ${data.sleepTime}</span></div>` : ''}
-        ${!data.feeds.length && !data.naps.length ? '<div style="color:#bbb;font-size:13px;padding:6px 0">No data logged</div>' : ''}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function toggleHistoryDay(key) {
-  const el = document.getElementById('hist_'+key);
-  if (el) el.classList.toggle('open');
-}
-
-// ─── SETTINGS ─────────────────────────────────────────────────────────────────
-function loadSettings() {
-  const s = getSettings();
-  document.getElementById('babyNameInput').value = s.babyName || '';
-  document.getElementById('dobInput').value = s.dob || '';
-  document.getElementById('genderInput').value = s.gender || '';
-  document.getElementById('feedIntervalInput').value = s.feedInterval || 3;
-}
-function updateHeaderName() {
-  const s = getSettings();
-  const name = s.babyName || 'Baby';
-  let age = '';
-  if (s.dob) {
-    const weeks = Math.round((new Date() - new Date(s.dob)) / (7*24*3600*1000));
-    age = weeks < 12 ? ` · ${weeks}w old` : ` · ${Math.round(weeks/4.3)}m old`;
-  }
-  document.getElementById('babyNameSub').textContent = name + age;
-}
-
-function clearAllData() {
-  if (!confirm('Clear all data? This cannot be undone.')) return;
-  const keys = Object.keys(localStorage).filter(k => k.startsWith('bt_'));
-  keys.forEach(k => localStorage.removeItem(k));
-  currentDateKey = todayKey();
-  renderDay();
-  showToast('All data cleared');
-}
-
-// ─── TOAST ────────────────────────────────────────────────────────────────────
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
-}
-
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-function init() {
-  updateHeaderName();
-  renderDay();
-  // Live clock for "since last feed"
-  setInterval(() => {
-    const el = document.getElementById('pageTodayEl');
-    if (el && el.classList.contains('active')) {
-      renderDay();
-    }
-  }, 60000);
-}
-
-init();
-</script>
-</body>
-</html>
+        <div><div class="avg-val" id="avgSleep">–</div><div
