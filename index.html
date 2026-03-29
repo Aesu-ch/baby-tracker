@@ -160,15 +160,11 @@
   .save-btn:hover{transform:translateY(-1px);}
   .save-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
 
-  .fab-menu{position:fixed;bottom:155px;right:20px;display:none;flex-direction:column;gap:10px;z-index:99;align-items:flex-end;}
-  .fab-menu.open{display:flex;}
-  .fab-item{display:flex;align-items:center;gap:10px;animation:popIn 0.2s cubic-bezier(0.34,1.56,0.64,1);}
-  @keyframes popIn{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
-  .fab-item-label{background:white;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:500;box-shadow:0 2px 10px var(--shadow-strong);color:var(--deep);white-space:nowrap;}
-  .fab-mini{background:white;border:none;width:44px;height:44px;border-radius:50%;font-size:20px;cursor:pointer;box-shadow:0 3px 14px var(--shadow-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.15s;}
-  .add-fab{position:fixed;bottom:90px;right:20px;background:linear-gradient(135deg,var(--terra),var(--blush));color:white;border:none;width:56px;height:56px;border-radius:50%;font-size:26px;cursor:pointer;box-shadow:0 4px 20px rgba(212,120,74,0.5);display:flex;align-items:center;justify-content:center;z-index:100;transition:transform 0.2s;}
-  .fab-rotate{transition:transform 0.25s;}
-  .fab-rotate.open{transform:rotate(45deg);}
+  .add-bar{position:fixed;bottom:57px;left:0;right:0;display:none;gap:10px;padding:10px 16px;background:white;border-top:1px solid var(--soft-peach);z-index:98;box-shadow:0 -2px 12px var(--shadow);}
+  .add-bar.visible{display:flex;}
+  .add-bar-btn{flex:1;background:var(--cream);border:1.5px solid var(--warm-sand);border-radius:12px;padding:11px;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;color:var(--deep);cursor:pointer;transition:all 0.15s;}
+  .add-bar-btn.primary{background:linear-gradient(135deg,var(--terra),var(--blush));color:white;border:none;box-shadow:0 3px 12px rgba(212,120,74,0.35);}
+  .add-bar-btn:active{transform:scale(0.97);}
 
   .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--soft-peach);display:flex;padding:6px 0 8px;z-index:99;}
   .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:4px;}
@@ -354,11 +350,10 @@
   </div>
 </div>
 
-<div class="fab-menu" id="fabMenu">
-  <div class="fab-item"><div class="fab-item-label">Add nap</div><button class="fab-mini" onclick="openNapModal()">😴</button></div>
-  <div class="fab-item"><div class="fab-item-label">Log feed</div><button class="fab-mini" onclick="openFeedModal()">🍼</button></div>
+<div class="add-bar" id="addBar">
+  <button class="add-bar-btn" onclick="openNapModal()">😴 Add Nap</button>
+  <button class="add-bar-btn primary" onclick="openFeedModal()">🍼 Log Feed</button>
 </div>
-<button class="add-fab" id="fabBtn" onclick="toggleFab()"><span class="fab-rotate" id="fabIcon">+</span></button>
 
 <div class="bottom-nav">
   <button class="nav-item active" onclick="showPage('pageToday','navToday')" id="navToday"><div class="nav-icon">📋</div><div class="nav-label">Today</div></button>
@@ -406,7 +401,7 @@
 <div class="modal-overlay" id="napModal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-header"><div class="modal-title">Log Nap 😴</div><button class="modal-close" onclick="closeNapModal()">✕</button></div>
+    <div class="modal-header"><div class="modal-title" id="napModalTitle">Log Nap 😴</div><button class="modal-close" onclick="closeNapModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-group"><label class="form-label">Start time</label><input class="form-input" type="time" id="napStartInput"></div>
       <div class="form-group"><label class="form-label">End time</label><input class="form-input" type="time" id="napEndInput"></div>
@@ -525,7 +520,9 @@ function showPage(pageId,navId){
   const pg=document.getElementById(pageId==='pageToday'?'pageTodayEl':pageId);
   if(pg)pg.classList.add('active');
   document.getElementById(navId)?.classList.add('active');
-  document.getElementById('fabBtn').style.display=pageId==='pageToday'?'flex':'none';
+  const isToday=pageId==='pageToday';
+  document.getElementById('addBar').classList.toggle('visible',isToday);
+  document.body.style.paddingBottom=isToday?'130px':'80px';
   if(pageId==='pageAnalysis')renderAnalysis();
   if(pageId==='pageGrowth')renderGrowth();
   if(pageId==='pageHistory')renderHistory();
@@ -619,7 +616,7 @@ function renderNapList(){
   const el=document.getElementById('napList');
   if(!dayNaps.length){el.innerHTML='<div class="empty"><div class="empty-icon">😴</div><div class="empty-text">No naps logged yet</div></div>';return;}
   el.innerHTML=[...dayNaps].sort((a,b)=>a.start_time.localeCompare(b.start_time)).map(n=>{
-    const dur=napDur(n);return`<div class="nap-card"><div class="nap-icon">😴</div><div class="nap-info"><div class="nap-duration">${fmtDur(dur)}</div><div class="nap-time-range">${n.start_time} → ${n.end_time}</div></div><div class="feed-actions"><button class="icon-btn delete" onclick="deleteNap('${n.id}')">🗑</button></div></div>`;
+    const dur=napDur(n);return`<div class="nap-card"><div class="nap-icon">😴</div><div class="nap-info"><div class="nap-duration">${fmtDur(dur)}</div><div class="nap-time-range">${n.start_time} → ${n.end_time}</div></div><div class="feed-actions"><button class="icon-btn" onclick="editNap('${n.id}')">✏️</button><button class="icon-btn delete" onclick="deleteNap('${n.id}')">🗑</button></div></div>`;
   }).join('');
 }
 
@@ -633,7 +630,7 @@ async function upsertDayData(patch){
 }
 
 function openFeedModal(id=null){
-  closeFab();editingFeedId=id;
+  editingFeedId=id;
   document.getElementById('feedModal').classList.add('open');
   if(id){
     const f=dayFeeds.find(x=>x.id===id);
@@ -677,18 +674,34 @@ async function deleteFeed(id){
 function changeMl(d){setMl(Math.max(10,currentMl+d));}
 function setMl(v){currentMl=v;document.getElementById('mlDisplay').textContent=v;document.querySelectorAll('.ml-preset').forEach(b=>b.classList.toggle('active',parseInt(b.textContent)===v));}
 
-function openNapModal(){
-  closeFab();const now=new Date(),h=String(now.getHours()).padStart(2,'0'),m=String(now.getMinutes()).padStart(2,'0');
-  document.getElementById('napStartInput').value=`${h}:${m}`;document.getElementById('napEndInput').value=`${h}:${m}`;
+let editingNapId=null;
+function openNapModal(id=null){
+  closeFab();editingNapId=id;
+  if(id){
+    const n=dayNaps.find(x=>x.id===id);
+    document.getElementById('napModalTitle').textContent='Edit Nap 😴';
+    document.getElementById('napStartInput').value=n.start_time;
+    document.getElementById('napEndInput').value=n.end_time;
+  }else{
+    document.getElementById('napModalTitle').textContent='Log Nap 😴';
+    const now=new Date(),h=String(now.getHours()).padStart(2,'0'),m=String(now.getMinutes()).padStart(2,'0');
+    document.getElementById('napStartInput').value=`${h}:${m}`;
+    document.getElementById('napEndInput').value=`${h}:${m}`;
+  }
   document.getElementById('napModal').classList.add('open');
 }
-function closeNapModal(){document.getElementById('napModal').classList.remove('open');}
+function editNap(id){openNapModal(id);}
+function closeNapModal(){document.getElementById('napModal').classList.remove('open');editingNapId=null;}
 async function saveNap(){
   const s=document.getElementById('napStartInput').value,e=document.getElementById('napEndInput').value;
   if(!s||!e){showToast('Set start and end');return;}
   const btn=document.getElementById('napSaveBtn');btn.disabled=true;btn.textContent='Saving…';
   setSyncing(true);
-  await db.from('naps').insert({id:Date.now().toString(),date_key:currentDateKey,start_time:s,end_time:e});
+  if(editingNapId){
+    await db.from('naps').update({start_time:s,end_time:e}).eq('id',editingNapId);
+  }else{
+    await db.from('naps').insert({id:Date.now().toString(),date_key:currentDateKey,start_time:s,end_time:e});
+  }
   const{data}=await db.from('naps').select('*').eq('date_key',currentDateKey).order('start_time');
   dayNaps=data||[];setSyncing(false);btn.disabled=false;btn.textContent='Save Nap';
   closeNapModal();renderDay();showToast('Nap saved ✓');
@@ -832,7 +845,10 @@ function debounceSetting(k,v){
   },800);
 }
 
-init();
+init().then(()=>{
+  document.getElementById('addBar').classList.add('visible');
+  document.body.style.paddingBottom='130px';
+});
 </script>
 </body>
 </html>
