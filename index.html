@@ -206,7 +206,7 @@
       <div class="header-sub" id="babyNameSub">Loading…</div>
     </div>
     <div style="text-align:right">
-      <div style="color:white;font-size:11px;opacity:0.75">Next feed in</div>
+      <div style="color:white;font-size:11px;opacity:0.75">Next feed at</div>
       <div style="color:white;font-family:'DM Serif Display',serif;font-size:20px;" id="headerNextFeed">–</div>
     </div>
   </div>
@@ -245,6 +245,11 @@
         <div class="med-icon">💨</div>
         <div><div class="med-name">Flatulex</div><div class="med-status" id="flatStatus">Not given</div></div>
         <div class="med-check" id="flatCheck">○</div>
+      </div>
+      <div class="med-pill" id="poopPill" onclick="toggleMed('poop')">
+        <div class="med-icon">💩</div>
+        <div><div class="med-name">Poop</div><div class="med-status" id="poopStatus">Not yet</div></div>
+        <div class="med-check" id="poopCheck">○</div>
       </div>
     </div>
     <div class="wake-sleep-card">
@@ -561,10 +566,13 @@ function renderDay(){
   // Meds
   document.getElementById('vitDPill').className='med-pill'+(dayData.vit_d_given?' given':'');
   document.getElementById('flatPill').className='med-pill'+(dayData.flat_given?' given':'');
+  document.getElementById('poopPill').className='med-pill'+(dayData.poop_today?' given':'');
   document.getElementById('vitDStatus').textContent=dayData.vit_d_given?'✓ Given today':'Not given today';
   document.getElementById('flatStatus').textContent=dayData.flat_given?'✓ Given today':'Not given today';
+  document.getElementById('poopStatus').textContent=dayData.poop_today?'✓ Yes today':'Not yet';
   document.getElementById('vitDCheck').textContent=dayData.vit_d_given?'✅':'○';
   document.getElementById('flatCheck').textContent=dayData.flat_given?'✅':'○';
+  document.getElementById('poopCheck').textContent=dayData.poop_today?'✅':'○';
   document.getElementById('wakeTimeDisplay').textContent=dayData.wake_time||'–';
   document.getElementById('sleepTimeDisplay').textContent=dayData.sleep_time||'–';
   renderFeedList();renderNapList();
@@ -579,7 +587,15 @@ function renderSinceFeed(){
     if(diff>=0){
       document.getElementById('sinceLastFeed').textContent=`${Math.floor(diff/60)}h ${diff%60}m`;
       const rem=(appSettings.feed_interval||3)*60-diff;
-      document.getElementById('headerNextFeed').textContent=rem>0?`${Math.floor(rem/60)}h ${rem%60}m`:'Now!';
+      if(rem>0){
+        const nextDt=new Date(last.getTime()+(appSettings.feed_interval||3)*60*60000);
+        const nh=nextDt.getHours(),nm=nextDt.getMinutes();
+        const ampm=nh>=12?'pm':'am';
+        const h12=nh%12||12;
+        document.getElementById('headerNextFeed').textContent=`${h12}:${String(nm).padStart(2,'0')}${ampm}`;
+      }else{
+        document.getElementById('headerNextFeed').textContent='Now!';
+      }
       return;
     }
   }
@@ -693,7 +709,9 @@ async function saveWsTime(){
 }
 
 async function toggleMed(med){
-  await upsertDayData(med==='vitD'?{vit_d_given:!dayData.vit_d_given}:{flat_given:!dayData.flat_given});
+  if(med==='vitD') await upsertDayData({vit_d_given:!dayData.vit_d_given});
+  else if(med==='flat') await upsertDayData({flat_given:!dayData.flat_given});
+  else if(med==='poop') await upsertDayData({poop_today:!dayData.poop_today});
   renderDay();
 }
 
@@ -805,7 +823,14 @@ function loadSettingsForm(){
   document.getElementById('genderInput').value=appSettings.gender||'';
   document.getElementById('feedIntervalInput').value=appSettings.feed_interval||3;
 }
-function debounceSetting(k,v){appSettings[k]=v;updateHeaderName();clearTimeout(settingDebounce);settingDebounce=setTimeout(()=>db.from('settings').update({[k]:v,updated_at:new Date().toISOString()}).eq('id',1),800);}
+function debounceSetting(k,v){
+  appSettings[k]=v;updateHeaderName();
+  clearTimeout(settingDebounce);
+  settingDebounce=setTimeout(async()=>{
+    // upsert ensures row is created if it doesn't exist yet
+    await db.from('settings').upsert({id:1,...appSettings,updated_at:new Date().toISOString()},{onConflict:'id'});
+  },800);
+}
 
 init();
 </script>
