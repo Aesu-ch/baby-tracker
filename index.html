@@ -176,6 +176,28 @@
   .settings-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--cream);}
   .settings-row:last-child{border-bottom:none;}
 
+  /* DIAPER COUNTER */
+  .diaper-card{background:white;border-radius:14px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px var(--shadow);margin-bottom:12px;}
+  .diaper-left{display:flex;align-items:center;gap:10px;}
+  .diaper-emoji{font-size:28px;}
+  .diaper-title{font-size:14px;font-weight:600;color:var(--deep);}
+  .diaper-sub{font-size:11px;color:#aaa;margin-top:1px;}
+  .diaper-controls{display:flex;align-items:center;gap:10px;}
+  .diaper-btn{background:var(--soft-peach);border:none;width:36px;height:36px;border-radius:50%;font-size:20px;font-weight:700;color:var(--terra);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;}
+  .diaper-btn:active{background:var(--warm-sand);}
+  .diaper-count{font-family:'DM Serif Display',serif;font-size:28px;color:var(--terra);min-width:32px;text-align:center;}
+
+  /* MEMORIES */
+  .memories-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 16px;}
+  .memory-card{border-radius:14px;overflow:hidden;box-shadow:0 2px 10px var(--shadow);position:relative;aspect-ratio:1;background:var(--soft-peach);}
+  .memory-img{width:100%;height:100%;object-fit:cover;display:block;}
+  .memory-date{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(61,35,20,0.7));color:white;font-size:11px;padding:16px 8px 6px;font-weight:500;}
+  .memory-delete{position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.4);border:none;color:white;width:26px;height:26px;border-radius:50%;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .upload-area{margin:16px;border:2px dashed var(--warm-sand);border-radius:14px;padding:24px;text-align:center;cursor:pointer;background:white;}
+  .upload-icon{font-size:36px;margin-bottom:8px;}
+  .upload-text{font-size:14px;color:var(--terra);font-weight:600;}
+  .upload-sub{font-size:12px;color:#aaa;margin-top:4px;}
+
   .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--deep);color:white;padding:10px 20px;border-radius:30px;font-size:14px;z-index:500;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);white-space:nowrap;}
   .toast.show{transform:translateX(-50%) translateY(0);}
 
@@ -248,6 +270,20 @@
         <div class="med-check" id="poopCheck">○</div>
       </div>
     </div>
+    <div class="diaper-card">
+      <div class="diaper-left">
+        <div class="diaper-emoji">🩲</div>
+        <div>
+          <div class="diaper-title">Diaper changes</div>
+          <div class="diaper-sub" id="diaperSub">tap to count</div>
+        </div>
+      </div>
+      <div class="diaper-controls">
+        <button class="diaper-btn" onclick="changeDiapers(-1)">−</button>
+        <div class="diaper-count" id="diaperCount">0</div>
+        <button class="diaper-btn" onclick="changeDiapers(1)">+</button>
+      </div>
+    </div>
     <div class="wake-sleep-card">
       <div class="ws-item" onclick="editWakeTime()">
         <div class="ws-icon">🌅</div><div class="ws-time" id="wakeTimeDisplay">–</div><div class="ws-label">Wake up</div>
@@ -303,10 +339,33 @@
         <div><div class="avg-val" id="avgFlat">–</div><div class="avg-label">Flatulex days (7d)</div></div>
       </div>
     </div>
+    <div class="analysis-card">
+      <div class="analysis-title">🩲 Diapers</div>
+      <div class="avg-row">
+        <div><div class="avg-val" id="avgDiaperDay">–</div><div class="avg-label">avg/day (7d)</div></div>
+        <div><div class="avg-val" id="avgDiaperWeek">–</div><div class="avg-label">total (7d)</div></div>
+        <div><div class="avg-val" id="avgDiaperMonth">–</div><div class="avg-label">total (30d)</div></div>
+      </div>
+      <div class="bar-chart" id="diaperBarChart"></div>
+    </div>
   </div>
 </div>
 
-<!-- GROWTH PAGE -->
+<!-- MEMORIES PAGE -->
+<div class="page" id="pageMemories">
+  <div class="section" style="padding-bottom:8px">
+    <div class="section-title">📸 Memories</div>
+  </div>
+  <div class="upload-area" onclick="document.getElementById('photoInput').click()">
+    <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="uploadPhoto(event)">
+    <div class="upload-icon">📷</div>
+    <div class="upload-text">Add a photo for today</div>
+    <div class="upload-sub" id="uploadDateSub">–</div>
+  </div>
+  <div class="memories-grid" id="memoriesGrid">
+    <div style="grid-column:1/-1;text-align:center;padding:30px;color:#bbb;font-size:14px">No memories yet 📸</div>
+  </div>
+</div>
 <div class="page" id="pageGrowth">
   <div class="section">
     <div class="section-title">📏 Growth Tracking</div>
@@ -357,7 +416,8 @@
 
 <div class="bottom-nav">
   <button class="nav-item active" onclick="showPage('pageToday','navToday')" id="navToday"><div class="nav-icon">📋</div><div class="nav-label">Today</div></button>
-  <button class="nav-item" onclick="showPage('pageAnalysis','navAnalysis')" id="navAnalysis"><div class="nav-icon">📊</div><div class="nav-label">Analysis</div></button>
+  <button class="nav-item" onclick="showPage('pageAnalysis','navAnalysis')" id="navAnalysis"><div class="nav-icon">📊</div><div class="nav-label">Stats</div></button>
+  <button class="nav-item" onclick="showPage('pageMemories','navMemories')" id="navMemories"><div class="nav-icon">📸</div><div class="nav-label">Memories</div></button>
   <button class="nav-item" onclick="showPage('pageGrowth','navGrowth')" id="navGrowth"><div class="nav-icon">📏</div><div class="nav-label">Growth</div></button>
   <button class="nav-item" onclick="showPage('pageHistory','navHistory')" id="navHistory"><div class="nav-icon">📅</div><div class="nav-label">History</div></button>
   <button class="nav-item" onclick="showPage('pageSettings','navSettings')" id="navSettings"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></button>
@@ -526,6 +586,7 @@ function showPage(pageId,navId){
   if(pageId==='pageAnalysis')renderAnalysis();
   if(pageId==='pageGrowth')renderGrowth();
   if(pageId==='pageHistory')renderHistory();
+  if(pageId==='pageMemories')renderMemories();
   if(pageId==='pageSettings')loadSettingsForm();
 }
 
@@ -572,6 +633,10 @@ function renderDay(){
   document.getElementById('poopCheck').textContent=dayData.poop_today?'✅':'○';
   document.getElementById('wakeTimeDisplay').textContent=dayData.wake_time||'–';
   document.getElementById('sleepTimeDisplay').textContent=dayData.sleep_time||'–';
+  // Diapers
+  const dc=dayData.diaper_count||0;
+  document.getElementById('diaperCount').textContent=dc;
+  document.getElementById('diaperSub').textContent=dc===0?'tap to count':dc===1?'1 change today':`${dc} changes today`;
   renderFeedList();renderNapList();
 }
 
@@ -758,6 +823,18 @@ async function renderAnalysis(){
   renderBarChart('sleepBarChart',napVals.map(v=>v/60),days,'#C5B8E8');
   document.getElementById('avgVitD').textContent=`${all.filter(d=>d.day.vit_d_given).length}/7`;
   document.getElementById('avgFlat').textContent=`${all.filter(d=>d.day.flat_given).length}/7`;
+  // Diapers 7d
+  const diaperVals=all.map(d=>d.day.diaper_count||0);
+  const totalDiapers7=diaperVals.reduce((s,v)=>s+v,0);
+  const avgDiaper=diaperVals.filter(v=>v>0).length?(totalDiapers7/diaperVals.filter(v=>v>0).length).toFixed(1):0;
+  document.getElementById('avgDiaperDay').textContent=avgDiaper||'–';
+  document.getElementById('avgDiaperWeek').textContent=totalDiapers7||'–';
+  renderBarChart('diaperBarChart',diaperVals,days,'#F5DEC8');
+  // Diapers 30d
+  const days30=[];for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days30.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);}
+  const res30=await Promise.all(days30.map(k=>db.from('day_data').select('diaper_count').eq('date_key',k).single()));
+  const total30=res30.reduce((s,r)=>s+(r.data?.diaper_count||0),0);
+  document.getElementById('avgDiaperMonth').textContent=total30||'–';
   const allFeeds=[];all.forEach(d=>d.feeds.forEach(f=>allFeeds.push(f.time)));
   const timingEl=document.getElementById('feedTimingList');
   if(allFeeds.length){
@@ -842,6 +919,68 @@ function debounceSetting(k,v){
     // upsert ensures row is created if it doesn't exist yet
     await db.from('settings').upsert({id:1,...appSettings,updated_at:new Date().toISOString()},{onConflict:'id'});
   },800);
+}
+
+// ── DIAPERS ───────────────────────────────────────────────────────────────────
+async function changeDiapers(delta){
+  const newCount=Math.max(0,(dayData.diaper_count||0)+delta);
+  await upsertDayData({diaper_count:newCount});
+  renderDay();
+}
+
+// ── MEMORIES ─────────────────────────────────────────────────────────────────
+async function uploadPhoto(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  // Resize image before storing
+  const canvas=document.createElement('canvas');
+  const img=new Image();
+  const reader=new FileReader();
+  reader.onload=e=>{
+    img.onload=async()=>{
+      const MAX=800;
+      let w=img.width,h=img.height;
+      if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const base64=canvas.toDataURL('image/jpeg',0.75);
+      setSyncing(true);
+      await db.from('memories').insert({id:Date.now().toString(),date_key:currentDateKey,image_data:base64,created_at:new Date().toISOString()});
+      setSyncing(false);
+      showToast('Photo saved ✓');
+      renderMemories();
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value='';
+}
+
+async function renderMemories(){
+  // Update upload area date
+  const d=new Date(currentDateKey+'T12:00:00');
+  document.getElementById('uploadDateSub').textContent='for '+d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+  const el=document.getElementById('memoriesGrid');
+  el.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:20px;color:#bbb;font-size:14px">Loading…</div>';
+  const{data}=await db.from('memories').select('*').order('date_key',{ascending:false}).order('created_at',{ascending:false});
+  if(!data||!data.length){el.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:30px;color:#bbb;font-size:14px">No memories yet 📸</div>';return;}
+  el.innerHTML=data.map(m=>{
+    const d=new Date(m.date_key+'T12:00:00');
+    const label=d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    return`<div class="memory-card">
+      <img class="memory-img" src="${m.image_data}" loading="lazy">
+      <div class="memory-date">${label}</div>
+      <button class="memory-delete" onclick="deleteMemory('${m.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+async function deleteMemory(id){
+  if(!confirm('Delete this photo?'))return;
+  setSyncing(true);
+  await db.from('memories').delete().eq('id',id);
+  setSyncing(false);
+  renderMemories();
 }
 
 init().then(()=>{
