@@ -264,10 +264,15 @@
         <div><div class="med-name">Flatulex</div><div class="med-status" id="flatStatus">Not given</div></div>
         <div class="med-check" id="flatCheck">○</div>
       </div>
-      <div class="med-pill" id="poopPill" onclick="toggleMed('poop')" style="grid-column:1/-1">
+      <div class="med-pill" id="poopPill" onclick="toggleMed('poop')">
         <div class="med-icon">💩</div>
         <div><div class="med-name">Poop</div><div class="med-status" id="poopStatus">Not yet</div></div>
         <div class="med-check" id="poopCheck">○</div>
+      </div>
+      <div class="med-pill" id="bathPill" onclick="toggleMed('bath')">
+        <div class="med-icon">🛁</div>
+        <div><div class="med-name">Bath</div><div class="med-status" id="bathStatus">Not yet</div></div>
+        <div class="med-check" id="bathCheck">○</div>
       </div>
     </div>
     <div class="diaper-card">
@@ -625,12 +630,15 @@ function renderDay(){
   document.getElementById('vitDPill').className='med-pill'+(dayData.vit_d_given?' given':'');
   document.getElementById('flatPill').className='med-pill'+(dayData.flat_given?' given':'');
   document.getElementById('poopPill').className='med-pill'+(dayData.poop_today?' given':'');
+  document.getElementById('bathPill').className='med-pill'+(dayData.bath_today?' given':'');
   document.getElementById('vitDStatus').textContent=dayData.vit_d_given?'✓ Given today':'Not given today';
   document.getElementById('flatStatus').textContent=dayData.flat_given?'✓ Given today':'Not given today';
   document.getElementById('poopStatus').textContent=dayData.poop_today?'✓ Yes today':'Not yet';
+  document.getElementById('bathStatus').textContent=dayData.bath_today?'✓ Done today':'Not yet';
   document.getElementById('vitDCheck').textContent=dayData.vit_d_given?'✅':'○';
   document.getElementById('flatCheck').textContent=dayData.flat_given?'✅':'○';
   document.getElementById('poopCheck').textContent=dayData.poop_today?'✅':'○';
+  document.getElementById('bathCheck').textContent=dayData.bath_today?'✅':'○';
   document.getElementById('wakeTimeDisplay').textContent=dayData.wake_time||'–';
   document.getElementById('sleepTimeDisplay').textContent=dayData.sleep_time||'–';
   // Diapers
@@ -790,6 +798,7 @@ async function toggleMed(med){
   if(med==='vitD') await upsertDayData({vit_d_given:!dayData.vit_d_given});
   else if(med==='flat') await upsertDayData({flat_given:!dayData.flat_given});
   else if(med==='poop') await upsertDayData({poop_today:!dayData.poop_today});
+  else if(med==='bath') await upsertDayData({bath_today:!dayData.bath_today});
   renderDay();
 }
 
