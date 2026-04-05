@@ -198,6 +198,28 @@
   .upload-text{font-size:14px;color:var(--terra);font-weight:600;}
   .upload-sub{font-size:12px;color:#aaa;margin-top:4px;}
 
+  /* MEDICAL */
+  .medical-card{background:white;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 12px var(--shadow);}
+  .vaccine-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--cream);}
+  .vaccine-row:last-child{border-bottom:none;}
+  .vaccine-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--warm-sand);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;margin-top:1px;transition:all 0.15s;}
+  .vaccine-check.done{background:var(--sage);border-color:var(--sage);color:white;}
+  .vaccine-info{flex:1;}
+  .vaccine-name{font-size:14px;font-weight:600;color:var(--deep);}
+  .vaccine-name.done{text-decoration:line-through;color:#aaa;}
+  .vaccine-due{font-size:11px;color:#aaa;margin-top:2px;}
+  .vaccine-appt{display:flex;align-items:center;gap:5px;margin-top:5px;}
+  .appt-check{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--sky);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;transition:all 0.15s;}
+  .appt-check.scheduled{background:var(--sky);border-color:var(--sky);color:white;}
+  .appt-label{font-size:11px;color:#aaa;}
+  .vaccine-actions{display:flex;gap:4px;flex-shrink:0;}
+  .visit-row{padding:10px 0;border-bottom:1px solid var(--cream);}
+  .visit-row:last-child{border-bottom:none;}
+  .visit-header{display:flex;justify-content:space-between;align-items:center;}
+  .visit-date{font-family:'DM Serif Display',serif;font-size:15px;color:var(--terra);}
+  .visit-name{font-size:12px;color:#888;margin-top:2px;}
+  .visit-obs{font-size:13px;color:var(--deep);margin-top:6px;line-height:1.4;background:var(--cream);border-radius:8px;padding:8px 10px;}
+
   .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--deep);color:white;padding:10px 20px;border-radius:30px;font-size:14px;z-index:500;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);white-space:nowrap;}
   .toast.show{transform:translateX(-50%) translateY(0);}
 
@@ -391,9 +413,36 @@
   </div>
 </div>
 
-<!-- HISTORY PAGE -->
-<div class="page" id="pageHistory">
-  <div class="section"><div class="section-title">📅 History</div><div id="historyList"></div></div>
+<!-- MEDICAL PAGE -->
+<div class="page" id="pageMedical">
+  <div class="section">
+    <div class="section-title">💉 Vaccinations</div>
+    <div class="medical-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:13px;color:#aaa">Tap to mark done · swipe to edit</span>
+        <button onclick="openVaccineModal()" style="background:var(--terra);color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Add</button>
+      </div>
+      <div id="vaccineList"><div style="color:#bbb;font-size:13px;text-align:center;padding:16px">No vaccines added yet</div></div>
+    </div>
+
+    <div class="section-title" style="margin-top:8px">👩‍⚕️ Midwife Visits</div>
+    <div class="medical-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:13px;color:#aaa">Track your home visits</span>
+        <button onclick="openVisitModal('midwife')" style="background:var(--sage);color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Add</button>
+      </div>
+      <div id="midwifeList"><div style="color:#bbb;font-size:13px;text-align:center;padding:16px">No visits recorded yet</div></div>
+    </div>
+
+    <div class="section-title" style="margin-top:8px">🩺 Pediatric Visits</div>
+    <div class="medical-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:13px;color:#aaa">Doctor check-ups</span>
+        <button onclick="openVisitModal('pediatric')" style="background:var(--terra);color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Add</button>
+      </div>
+      <div id="pediatricList"><div style="color:#bbb;font-size:13px;text-align:center;padding:16px">No visits recorded yet</div></div>
+    </div>
+  </div>
 </div>
 
 <!-- SETTINGS PAGE -->
@@ -411,6 +460,9 @@
       <div class="settings-row"><span>Feed interval (h)</span><input class="form-input" type="number" id="feedIntervalInput" style="width:70px;text-align:center" value="3" min="1" max="6" onchange="debounceSetting('feed_interval',parseInt(this.value))"></div>
     </div>
     <div style="padding:10px 0;color:#bbb;font-size:12px;text-align:center">🔄 Shared in real-time between all devices</div>
+
+    <div class="section-title" style="margin-top:8px">📅 History</div>
+    <div id="historyList"></div>
   </div>
 </div>
 
@@ -424,7 +476,7 @@
   <button class="nav-item" onclick="showPage('pageAnalysis','navAnalysis')" id="navAnalysis"><div class="nav-icon">📊</div><div class="nav-label">Stats</div></button>
   <button class="nav-item" onclick="showPage('pageMemories','navMemories')" id="navMemories"><div class="nav-icon">📸</div><div class="nav-label">Memories</div></button>
   <button class="nav-item" onclick="showPage('pageGrowth','navGrowth')" id="navGrowth"><div class="nav-icon">📏</div><div class="nav-label">Growth</div></button>
-  <button class="nav-item" onclick="showPage('pageHistory','navHistory')" id="navHistory"><div class="nav-icon">📅</div><div class="nav-label">History</div></button>
+  <button class="nav-item" onclick="showPage('pageMedical','navMedical')" id="navMedical"><div class="nav-icon">💉</div><div class="nav-label">Medical</div></button>
   <button class="nav-item" onclick="showPage('pageSettings','navSettings')" id="navSettings"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></button>
 </div>
 
@@ -496,6 +548,38 @@
       <div class="form-group"><label class="form-label">Height (cm)</label><input class="form-input" type="number" id="growthHeightInput" step="0.1" placeholder="e.g. 55.0"></div>
       <div class="form-group"><label class="form-label">Head circumference (cm)</label><input class="form-input" type="number" id="growthHCInput" step="0.1" placeholder="optional"></div>
       <button class="save-btn" onclick="saveGrowth()">Save Measurement</button>
+    </div>
+  </div>
+</div>
+
+<!-- VACCINE MODAL -->
+<div class="modal-overlay" id="vaccineModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title" id="vaccineModalTitle">Add Vaccine 💉</div><button class="modal-close" onclick="closeVaccineModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Vaccine name</label><input class="form-input" id="vaccineNameInput" placeholder="e.g. BCG, DTP, MMR…"></div>
+      <div class="form-group"><label class="form-label">Due at (age / date)</label><input class="form-input" id="vaccineDueInput" placeholder="e.g. 2 months, 12 Sept 2026…"></div>
+      <button class="save-btn" onclick="saveVaccine()">Save Vaccine</button>
+    </div>
+  </div>
+</div>
+
+<!-- VISIT MODAL -->
+<div class="modal-overlay" id="visitModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title" id="visitModalTitle">Add Visit</div><button class="modal-close" onclick="closeVisitModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" id="visitDateInput"></div>
+      <div id="visitMidwifeFields">
+        <div class="form-group"><label class="form-label">Midwife name</label><input class="form-input" id="visitNameInput" placeholder="Name"></div>
+      </div>
+      <div id="visitPediatricFields" style="display:none">
+        <div class="form-group"><label class="form-label">Baby age (months)</label><input class="form-input" type="number" id="visitAgeInput" placeholder="e.g. 2" min="0" max="36"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Observations / notes</label><textarea class="form-input" id="visitObsInput" rows="3" placeholder="Notes from the visit…" style="resize:none;line-height:1.5"></textarea></div>
+      <button class="save-btn" onclick="saveVisit()">Save Visit</button>
     </div>
   </div>
 </div>
@@ -592,7 +676,8 @@ function showPage(pageId,navId){
   if(pageId==='pageGrowth')renderGrowth();
   if(pageId==='pageHistory')renderHistory();
   if(pageId==='pageMemories')renderMemories();
-  if(pageId==='pageSettings')loadSettingsForm();
+  if(pageId==='pageMedical')renderMedical();
+  if(pageId==='pageSettings'){loadSettingsForm();renderHistory();}
 }
 
 async function changeDay(delta){
@@ -990,6 +1075,152 @@ async function deleteMemory(id){
   await db.from('memories').delete().eq('id',id);
   setSyncing(false);
   renderMemories();
+}
+
+// ── MEDICAL ───────────────────────────────────────────────────────────────────
+let editingVaccineId=null, visitType=null, editingVisitId=null;
+
+async function renderMedical(){
+  const[vRes,mRes,pRes]=await Promise.all([
+    db.from('vaccines').select('*').order('created_at'),
+    db.from('visits').select('*').eq('type','midwife').order('date',{ascending:false}),
+    db.from('visits').select('*').eq('type','pediatric').order('date',{ascending:false})
+  ]);
+  renderVaccineList(vRes.data||[]);
+  renderVisitList('midwifeList', mRes.data||[], 'midwife');
+  renderVisitList('pediatricList', pRes.data||[], 'pediatric');
+}
+
+function renderVaccineList(vaccines){
+  const el=document.getElementById('vaccineList');
+  if(!vaccines.length){el.innerHTML='<div style="color:#bbb;font-size:13px;text-align:center;padding:16px">No vaccines added yet</div>';return;}
+  el.innerHTML=vaccines.map(v=>`
+    <div class="vaccine-row">
+      <div class="vaccine-check ${v.done?'done':''}" onclick="toggleVaccineDone('${v.id}',${v.done})">${v.done?'✓':''}</div>
+      <div class="vaccine-info">
+        <div class="vaccine-name ${v.done?'done':''}">${v.name}</div>
+        ${v.due?`<div class="vaccine-due">📅 ${v.due}</div>`:''}
+        <div class="vaccine-appt">
+          <div class="appt-check ${v.scheduled?'scheduled':''}" onclick="toggleVaccineScheduled('${v.id}',${v.scheduled})">${v.scheduled?'✓':''}</div>
+          <span class="appt-label">${v.scheduled?'Appointment scheduled':'Schedule appointment'}</span>
+        </div>
+      </div>
+      <div class="vaccine-actions">
+        <button class="icon-btn" onclick="openVaccineModal('${v.id}')">✏️</button>
+        <button class="icon-btn delete" onclick="deleteVaccine('${v.id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderVisitList(elId, visits, type){
+  const el=document.getElementById(elId);
+  if(!visits.length){el.innerHTML=`<div style="color:#bbb;font-size:13px;text-align:center;padding:16px">No visits recorded yet</div>`;return;}
+  el.innerHTML=visits.map(v=>`
+    <div class="visit-row">
+      <div class="visit-header">
+        <div>
+          <div class="visit-date">${v.date}</div>
+          ${v.name?`<div class="visit-name">👩‍⚕️ ${v.name}</div>`:''}
+          ${v.age_months!=null?`<div class="visit-name">👶 ${v.age_months} months old</div>`:''}
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="icon-btn" onclick="openVisitModal('${type}','${v.id}')">✏️</button>
+          <button class="icon-btn delete" onclick="deleteVisit('${v.id}')">🗑</button>
+        </div>
+      </div>
+      ${v.observations?`<div class="visit-obs">${v.observations}</div>`:''}
+    </div>`).join('');
+}
+
+function openVaccineModal(id=null){
+  editingVaccineId=id;
+  document.getElementById('vaccineModalTitle').textContent=id?'Edit Vaccine 💉':'Add Vaccine 💉';
+  if(id){
+    // pre-fill done async below
+    db.from('vaccines').select('*').eq('id',id).single().then(({data})=>{
+      if(data){document.getElementById('vaccineNameInput').value=data.name||'';document.getElementById('vaccineDueInput').value=data.due||'';}
+    });
+  }else{
+    document.getElementById('vaccineNameInput').value='';
+    document.getElementById('vaccineDueInput').value='';
+  }
+  document.getElementById('vaccineModal').classList.add('open');
+}
+function closeVaccineModal(){document.getElementById('vaccineModal').classList.remove('open');editingVaccineId=null;}
+
+async function saveVaccine(){
+  const name=document.getElementById('vaccineNameInput').value.trim();
+  if(!name){showToast('Enter a vaccine name');return;}
+  const due=document.getElementById('vaccineDueInput').value.trim();
+  setSyncing(true);
+  if(editingVaccineId){
+    await db.from('vaccines').update({name,due}).eq('id',editingVaccineId);
+  }else{
+    await db.from('vaccines').insert({id:Date.now().toString(),name,due,done:false,scheduled:false,created_at:new Date().toISOString()});
+  }
+  setSyncing(false);closeVaccineModal();renderMedical();showToast('Vaccine saved ✓');
+}
+
+async function toggleVaccineDone(id,current){
+  setSyncing(true);
+  await db.from('vaccines').update({done:!current}).eq('id',id);
+  setSyncing(false);renderMedical();
+}
+async function toggleVaccineScheduled(id,current){
+  setSyncing(true);
+  await db.from('vaccines').update({scheduled:!current}).eq('id',id);
+  setSyncing(false);renderMedical();
+}
+async function deleteVaccine(id){
+  if(!confirm('Delete this vaccine?'))return;
+  setSyncing(true);await db.from('vaccines').delete().eq('id',id);setSyncing(false);renderMedical();
+}
+
+function openVisitModal(type, id=null){
+  visitType=type;editingVisitId=id;
+  const isMidwife=type==='midwife';
+  document.getElementById('visitModalTitle').textContent=id?(isMidwife?'Edit Midwife Visit 👩‍⚕️':'Edit Pediatric Visit 🩺'):(isMidwife?'Add Midwife Visit 👩‍⚕️':'Add Pediatric Visit 🩺');
+  document.getElementById('visitMidwifeFields').style.display=isMidwife?'block':'none';
+  document.getElementById('visitPediatricFields').style.display=isMidwife?'none':'block';
+  const today=new Date();
+  document.getElementById('visitDateInput').value=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  document.getElementById('visitNameInput').value='';
+  document.getElementById('visitAgeInput').value='';
+  document.getElementById('visitObsInput').value='';
+  if(id){
+    db.from('visits').select('*').eq('id',id).single().then(({data})=>{
+      if(data){
+        document.getElementById('visitDateInput').value=data.date||'';
+        document.getElementById('visitNameInput').value=data.name||'';
+        document.getElementById('visitAgeInput').value=data.age_months!=null?data.age_months:'';
+        document.getElementById('visitObsInput').value=data.observations||'';
+      }
+    });
+  }
+  document.getElementById('visitModal').classList.add('open');
+}
+function closeVisitModal(){document.getElementById('visitModal').classList.remove('open');visitType=null;editingVisitId=null;}
+
+async function saveVisit(){
+  const date=document.getElementById('visitDateInput').value;
+  if(!date){showToast('Set a date');return;}
+  const payload={
+    type:visitType,date,
+    name:document.getElementById('visitNameInput').value.trim()||null,
+    age_months:document.getElementById('visitAgeInput').value!==''?parseInt(document.getElementById('visitAgeInput').value):null,
+    observations:document.getElementById('visitObsInput').value.trim()||null
+  };
+  setSyncing(true);
+  if(editingVisitId){
+    await db.from('visits').update(payload).eq('id',editingVisitId);
+  }else{
+    await db.from('visits').insert({id:Date.now().toString(),...payload,created_at:new Date().toISOString()});
+  }
+  setSyncing(false);closeVisitModal();renderMedical();showToast('Visit saved ✓');
+}
+async function deleteVisit(id){
+  if(!confirm('Delete this visit?'))return;
+  setSyncing(true);await db.from('visits').delete().eq('id',id);setSyncing(false);renderMedical();
 }
 
 init().then(()=>{
