@@ -759,7 +759,7 @@ function napDur(n){const[sh,sm]=(n.start_time||'0:0').split(':').map(Number),[eh
 
 async function init(){
   try{
-    await Promise.all([loadSettings(),loadDayData(),loadGrowth(),loadPrevSleep()]);
+    await Promise.all([loadSettings(),loadDayData(),loadGrowth(),loadPrevSleep(),initPPState()]);
     setupRealtime();
   }catch(e){console.error(e);showToast('Connection error');}
   document.getElementById('loadingOverlay').classList.add('hidden');
@@ -1384,8 +1384,7 @@ function addNewActivity(){
 async function saveActivitiesEditor(){
   PP_ACTIVITIES = [...editingActivities];
   rebuildActivityPoints();
-  // Save to Supabase inside ppState
-  await loadPPState();
+  // Patch customActivities directly into ppState without reloading
   ppState.customActivities = PP_ACTIVITIES;
   await savePPState();
   closeActivitiesEditor();
@@ -1493,14 +1492,10 @@ async function saveJournal(){
   closeJournalModal();
   // Award 1 pt only on new entry (not edit)
   if(isNew){
-    await loadPPState();
-    const prevPts = calcPoints(ppState);
-    ppState.journal = ppState.journal||{};
-    ppState.journal[today] = true;
-    await savePPState();
-    const newPts = calcPoints(ppState) + 1; // +1 for journal
+    const prevPts = calcTotalPts(ppState);
     ppState._journalPts = (ppState._journalPts||0) + 1;
     await savePPState();
+    const newPts = calcTotalPts(ppState);
     renderAvatar(calcTotalPts(ppState));
     showToast('+1 pt ✨ Entry saved!');
   } else {
@@ -1569,7 +1564,11 @@ let ppState={activities:{},parcs:{}};
 async function loadPPState(){
   const{data}=await db.from('postpartum_state').select('*').eq('id',1).single();
   ppState=data?.state||{activities:{},parcs:{}};
-  // Load custom activities if saved
+}
+
+async function initPPState(){
+  await loadPPState();
+  // Set activities once at init only
   if(ppState.customActivities && ppState.customActivities.length){
     PP_ACTIVITIES = ppState.customActivities;
   } else {
@@ -1585,7 +1584,6 @@ async function savePPState(){
 }
 
 async function togglePPActivity(id){
-  await loadPPState();
   const prevPts=calcTotalPts(ppState);
   ppState.activities[id]=(ppState.activities[id]||0)+1;
   if(ppState.activities[id]>20)ppState.activities[id]=0;
@@ -1599,7 +1597,6 @@ async function togglePPActivity(id){
 }
 
 async function toggleParc(id){
-  await loadPPState();
   const prevPts=calcTotalPts(ppState);
   ppState.parcs[id]=!ppState.parcs[id];
   await savePPState();
