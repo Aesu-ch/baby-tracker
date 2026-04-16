@@ -229,6 +229,34 @@
   .parc-location{font-size:11px;color:#888;margin-top:1px;}
   .parc-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;}
   .parc-tag{font-size:10px;background:var(--cream);color:var(--terra);padding:2px 6px;border-radius:8px;font-weight:500;}
+
+  .act-editor-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--cream);}
+  .act-editor-row:last-child{border-bottom:none;}
+  .act-editor-icon{font-size:20px;width:32px;text-align:center;flex-shrink:0;}
+  .act-editor-name{flex:1;font-size:13px;font-weight:500;color:var(--deep);}
+  .act-editor-pts{font-size:11px;color:var(--terra);font-weight:700;background:var(--soft-peach);padding:2px 8px;border-radius:10px;flex-shrink:0;}
+  .act-editor-btns{display:flex;gap:4px;flex-shrink:0;}
+
+  /* JOURNAL */
+  .journal-card{background:white;border-radius:14px;padding:14px 16px;box-shadow:0 2px 10px var(--shadow);margin-bottom:8px;cursor:pointer;transition:all 0.2s;}
+  .journal-card.done{background:linear-gradient(135deg,#FFF0F8,#FFE8F4);border:1.5px solid #F2A9D0;cursor:default;}
+  .journal-empty{text-align:center;padding:4px 0;color:#bbb;font-size:13px;}
+  .journal-prompt{font-size:14px;font-weight:600;color:var(--terra);margin-bottom:2px;}
+  .journal-tap{font-size:12px;color:#aaa;}
+  .journal-done-mood{font-size:28px;margin-bottom:4px;}
+  .journal-done-text{font-size:13px;color:var(--deep);line-height:1.5;font-style:italic;}
+  .journal-done-meta{font-size:10px;color:#bbb;margin-top:6px;display:flex;justify-content:space-between;align-items:center;}
+  .journal-edit-btn{font-size:11px;color:var(--terra);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;padding:0;}
+  .journal-history-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--cream);border-radius:10px;cursor:pointer;margin-bottom:8px;font-size:13px;color:var(--terra);font-weight:600;}
+  #journalHistoryArrow{font-size:18px;color:var(--terra);transition:transform 0.2s;}
+  #journalHistoryArrow.open{transform:rotate(90deg);}
+  .journal-hist-row{background:white;border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 6px var(--shadow);}
+  .journal-hist-date{font-size:12px;font-weight:600;color:var(--terra);margin-bottom:4px;}
+  .journal-hist-text{font-size:13px;color:var(--deep);line-height:1.5;font-style:italic;}
+  .mood-selector{display:flex;gap:8px;justify-content:center;margin-bottom:4px;}
+  .mood-btn{background:var(--cream);border:2px solid var(--warm-sand);border-radius:12px;width:48px;height:48px;font-size:24px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+  .mood-btn.selected{background:var(--soft-peach);border-color:var(--terra);transform:scale(1.15);}
+
   .medical-card{background:white;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 12px var(--shadow);}
   .vaccine-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--cream);}
   .vaccine-row:last-child{border-bottom:none;}
@@ -490,8 +518,22 @@
   </div>
 
   <div class="section" style="padding-bottom:0;padding-top:12px">
-    <div class="section-title">🌸 Self-care Activities</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="section-title" style="margin-bottom:0">🌸 Self-care Activities</div>
+      <button onclick="openActivitiesEditor()" style="background:var(--cream);border:1.5px solid var(--warm-sand);color:var(--terra);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">✏️ Edit</button>
+    </div>
     <div class="pp-activities" id="ppActivities"></div>
+
+    <!-- JOURNAL -->
+    <div class="section-title" style="margin-top:16px">💭 How are you doing today?</div>
+    <div class="journal-card" id="journalCard">
+      <!-- filled by JS -->
+    </div>
+    <div class="journal-history-toggle" onclick="toggleJournalHistory()">
+      <span id="journalHistoryLabel">📖 See past entries</span>
+      <span id="journalHistoryArrow">›</span>
+    </div>
+    <div id="journalHistory" style="display:none"></div>
 
     <div class="section-title" style="margin-top:16px">🌳 Parcs à visiter</div>
     <div style="font-size:12px;color:#aaa;margin-bottom:10px">Geneva parks — tap to mark as visited</div>
@@ -602,6 +644,63 @@
       <div class="form-group"><label class="form-label">Height (cm)</label><input class="form-input" type="number" id="growthHeightInput" step="0.1" placeholder="e.g. 55.0"></div>
       <div class="form-group"><label class="form-label">Head circumference (cm)</label><input class="form-input" type="number" id="growthHCInput" step="0.1" placeholder="optional"></div>
       <button class="save-btn" onclick="saveGrowth()">Save Measurement</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTIVITIES EDITOR MODAL -->
+<div class="modal-overlay" id="activitiesEditorModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">Edit Activities ✏️</div>
+      <button class="modal-close" onclick="closeActivitiesEditor()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="activitiesEditorList" style="margin-bottom:16px"></div>
+      <div style="background:var(--cream);border-radius:12px;padding:12px;margin-bottom:12px">
+        <div class="form-label" style="margin-bottom:8px">Add new activity</div>
+        <div style="display:grid;grid-template-columns:50px 1fr;gap:8px;margin-bottom:8px">
+          <input class="form-input" id="newActIcon" placeholder="🎨" style="text-align:center;font-size:20px;padding:8px">
+          <input class="form-input" id="newActName" placeholder="Activity name">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 80px;gap:8px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:12px;color:#888;white-space:nowrap">Points reward</span>
+            <input class="form-input" type="number" id="newActPts" placeholder="5" min="1" max="20" style="width:60px;text-align:center">
+          </div>
+          <button onclick="addNewActivity()" style="background:var(--terra);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">+ Add</button>
+        </div>
+      </div>
+      <button class="save-btn" onclick="saveActivitiesEditor()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- JOURNAL MODAL -->
+<div class="modal-overlay" id="journalModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="journalModalTitle">How are you today? 💭</div>
+      <button class="modal-close" onclick="closeJournalModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Rate your day</label>
+        <div class="mood-selector" id="moodSelector">
+          <button class="mood-btn" onclick="selectMood(1)" data-mood="1">😔</button>
+          <button class="mood-btn" onclick="selectMood(2)" data-mood="2">😕</button>
+          <button class="mood-btn" onclick="selectMood(3)" data-mood="3">😐</button>
+          <button class="mood-btn" onclick="selectMood(4)" data-mood="4">🙂</button>
+          <button class="mood-btn" onclick="selectMood(5)" data-mood="5">😄</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">How are you feeling?</label>
+        <textarea class="form-input" id="journalText" rows="4" placeholder="Write anything… a thought, a moment, how you feel today 🌸" style="resize:none;line-height:1.6"></textarea>
+      </div>
+      <button class="save-btn" onclick="saveJournal()">Save (+1 pt) ✨</button>
     </div>
   </div>
 </div>
@@ -1142,10 +1241,23 @@ const LEVELS = [
   { min:240, max:999, emoji:'👑', title:'Queen Maman',       desc:'Crown earned! 👑' },
 ];
 
-const ACTIVITY_POINTS = {
-  lunch:5, walk:3, museum:4, parc_play:3, coffee:2,
-  haircut:6, nails:5, massage:8, yoga:4, babysign:5, boat:4, picnic:3
-};
+const DEFAULT_ACTIVITIES = [
+  {id:'lunch',icon:'🍽️',name:'Lunch with friends',pts:5},
+  {id:'walk',icon:'🚶‍♀️',name:'Walk in a park',pts:3},
+  {id:'museum',icon:'🏛️',name:'Visit a museum',pts:4},
+  {id:'parc_play',icon:'🛝',name:'Parc Play',pts:3},
+  {id:'coffee',icon:'☕',name:'Coffee break',pts:2},
+  {id:'haircut',icon:'✂️',name:'Hair cut',pts:6},
+  {id:'nails',icon:'💅',name:'Nails',pts:5},
+  {id:'massage',icon:'💆‍♀️',name:'Massage',pts:8},
+  {id:'yoga',icon:'🧘‍♀️',name:'Yoga / Sport',pts:4},
+  {id:'babysign',icon:'🤟',name:'Baby signing class',pts:5},
+  {id:'boat',icon:'⛵',name:'Mouettes boat ride',pts:4},
+  {id:'picnic',icon:'🧺',name:'Picnic by the lake',pts:3},
+];
+let PP_ACTIVITIES = [...DEFAULT_ACTIVITIES];
+const ACTIVITY_POINTS = {}; // kept for compat, rebuilt dynamically
+function rebuildActivityPoints(){ PP_ACTIVITIES.forEach(a=>{ ACTIVITY_POINTS[a.id]=a.pts; }); }
 const PARC_POINTS = 4;
 
 function calcPoints(state) {
@@ -1155,6 +1267,10 @@ function calcPoints(state) {
   });
   Object.values(state.parcs || {}).forEach(visited => { if(visited) pts += PARC_POINTS; });
   return pts;
+}
+
+function calcTotalPts(state){
+  return calcPoints(state) + (state._journalPts||0);
 }
 
 function getLevel(pts) {
@@ -1184,22 +1300,196 @@ function renderAvatar(pts, animate=false) {
   }
 }
 
-// ── POSTPARTUM ────────────────────────────────────────────────────────────────
-const PP_ACTIVITIES = [
-  {id:'lunch',icon:'🍽️',name:'Lunch with friends'},
-  {id:'walk',icon:'🚶‍♀️',name:'Walk in a park'},
-  {id:'museum',icon:'🏛️',name:'Visit a museum'},
-  {id:'parc_play',icon:'🛝',name:'Parc Play'},
-  {id:'coffee',icon:'☕',name:'Coffee break'},
-  {id:'haircut',icon:'✂️',name:'Hair cut'},
-  {id:'nails',icon:'💅',name:'Nails'},
-  {id:'massage',icon:'💆‍♀️',name:'Massage'},
-  {id:'yoga',icon:'🧘‍♀️',name:'Yoga / Sport'},
-  {id:'babysign',icon:'🤟',name:'Baby signing class'},
-  {id:'boat',icon:'⛵',name:'Mouettes boat ride'},
-  {id:'picnic',icon:'🧺',name:'Picnic by the lake'},
-];
+// ── ACTIVITIES EDITOR ────────────────────────────────────────────────────────
+let editingActivities = []; // working copy during editing
 
+function openActivitiesEditor(){
+  editingActivities = PP_ACTIVITIES.map(a=>({...a}));
+  renderActivitiesEditorList();
+  document.getElementById('newActIcon').value='';
+  document.getElementById('newActName').value='';
+  document.getElementById('newActPts').value='5';
+  document.getElementById('activitiesEditorModal').classList.add('open');
+}
+function closeActivitiesEditor(){ document.getElementById('activitiesEditorModal').classList.remove('open'); }
+
+function renderActivitiesEditorList(){
+  const el = document.getElementById('activitiesEditorList');
+  if(!editingActivities.length){
+    el.innerHTML='<div style="color:#bbb;font-size:13px;text-align:center;padding:10px">No activities yet</div>';
+    return;
+  }
+  el.innerHTML = editingActivities.map((a,i)=>`
+    <div class="act-editor-row">
+      <div class="act-editor-icon">${a.icon}</div>
+      <div class="act-editor-name">${a.name}</div>
+      <div class="act-editor-pts">+${a.pts} pts</div>
+      <div class="act-editor-btns">
+        <button class="icon-btn" onclick="editActivity(${i})">✏️</button>
+        <button class="icon-btn delete" onclick="deleteActivity(${i})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function editActivity(i){
+  const a = editingActivities[i];
+  const name = prompt(`Edit name for ${a.icon} ${a.name}:`, a.name);
+  if(name===null) return;
+  const pts = parseInt(prompt(`Points for this activity:`, a.pts));
+  if(isNaN(pts)||pts<1) return;
+  editingActivities[i] = {...a, name: name.trim()||a.name, pts};
+  renderActivitiesEditorList();
+}
+
+function deleteActivity(i){
+  if(!confirm(`Remove "${editingActivities[i].name}"?`)) return;
+  editingActivities.splice(i,1);
+  renderActivitiesEditorList();
+}
+
+function addNewActivity(){
+  const icon = document.getElementById('newActIcon').value.trim()||'⭐';
+  const name = document.getElementById('newActName').value.trim();
+  const pts = parseInt(document.getElementById('newActPts').value)||5;
+  if(!name){ showToast('Enter an activity name'); return; }
+  const id = 'custom_'+Date.now();
+  editingActivities.push({id, icon, name, pts});
+  document.getElementById('newActIcon').value='';
+  document.getElementById('newActName').value='';
+  document.getElementById('newActPts').value='5';
+  renderActivitiesEditorList();
+}
+
+async function saveActivitiesEditor(){
+  PP_ACTIVITIES = [...editingActivities];
+  rebuildActivityPoints();
+  // Save to Supabase inside ppState
+  await loadPPState();
+  ppState.customActivities = PP_ACTIVITIES;
+  await savePPState();
+  closeActivitiesEditor();
+  renderPostpartum();
+  showToast('Activities saved ✓');
+}
+
+// ── JOURNAL ───────────────────────────────────────────────────────────────────
+let selectedMood = 3;
+let journalHistoryOpen = false;
+let editingJournalDate = null;
+
+const MOOD_EMOJIS = {1:'😔',2:'😕',3:'😐',4:'🙂',5:'😄'};
+
+async function renderJournalCard(){
+  const today = todayKey();
+  const {data} = await db.from('journal_entries').select('*').eq('date_key', today).single();
+  const el = document.getElementById('journalCard');
+  if(data){
+    el.className = 'journal-card done';
+    el.innerHTML = `
+      <div class="journal-done-mood">${MOOD_EMOJIS[data.mood]||'😐'}</div>
+      <div class="journal-done-text">"${data.text}"</div>
+      <div class="journal-done-meta">
+        <span>${today} · +1 pt</span>
+        <button class="journal-edit-btn" onclick="openJournalModal(true)">✏️ Edit</button>
+      </div>`;
+    el.onclick = null;
+  } else {
+    el.className = 'journal-card';
+    el.innerHTML = `
+      <div class="journal-prompt">✍️ Write about your day</div>
+      <div class="journal-tap">Tap to add your daily note · +1 pt</div>`;
+    el.onclick = () => openJournalModal(false);
+  }
+}
+
+async function renderJournalHistory(){
+  const el = document.getElementById('journalHistory');
+  el.innerHTML = '<div style="color:#bbb;font-size:13px;text-align:center;padding:10px">Loading…</div>';
+  const {data} = await db.from('journal_entries').select('*').order('date_key', {ascending:false}).limit(30);
+  if(!data||!data.length){el.innerHTML='<div style="color:#bbb;font-size:13px;text-align:center;padding:10px">No entries yet</div>';return;}
+  el.innerHTML = data.map(e=>`
+    <div class="journal-hist-row">
+      <div class="journal-hist-date">${MOOD_EMOJIS[e.mood]||'😐'} ${formatNiceDate(e.date_key)}</div>
+      <div class="journal-hist-text">"${e.text}"</div>
+    </div>`).join('');
+}
+
+function formatNiceDate(key){
+  const d = new Date(key+'T12:00:00');
+  return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long'});
+}
+
+function toggleJournalHistory(){
+  journalHistoryOpen = !journalHistoryOpen;
+  const el = document.getElementById('journalHistory');
+  const arrow = document.getElementById('journalHistoryArrow');
+  const label = document.getElementById('journalHistoryLabel');
+  el.style.display = journalHistoryOpen ? 'block' : 'none';
+  arrow.classList.toggle('open', journalHistoryOpen);
+  label.textContent = journalHistoryOpen ? '📖 Hide entries' : '📖 See past entries';
+  if(journalHistoryOpen) renderJournalHistory();
+}
+
+function openJournalModal(isEdit=false){
+  editingJournalDate = isEdit ? todayKey() : null;
+  selectedMood = 3;
+  document.getElementById('journalText').value = '';
+  document.getElementById('journalModalTitle').textContent = isEdit ? 'Edit today\'s note ✏️' : 'How are you today? 💭';
+  // if editing, pre-fill
+  if(isEdit){
+    db.from('journal_entries').select('*').eq('date_key', todayKey()).single().then(({data})=>{
+      if(data){
+        document.getElementById('journalText').value = data.text||'';
+        selectMood(data.mood||3);
+      }
+    });
+  } else {
+    selectMood(3);
+  }
+  document.getElementById('journalModal').classList.add('open');
+}
+
+function closeJournalModal(){ document.getElementById('journalModal').classList.remove('open'); }
+
+function selectMood(val){
+  selectedMood = val;
+  document.querySelectorAll('.mood-btn').forEach(b=>{
+    b.classList.toggle('selected', parseInt(b.dataset.mood)===val);
+  });
+}
+
+async function saveJournal(){
+  const text = document.getElementById('journalText').value.trim();
+  if(!text){showToast('Write something first 🌸');return;}
+  const today = todayKey();
+  const isNew = !editingJournalDate;
+  setSyncing(true);
+  await db.from('journal_entries').upsert({
+    id: today, date_key: today, text, mood: selectedMood,
+    updated_at: new Date().toISOString()
+  },{onConflict:'date_key'});
+  setSyncing(false);
+  closeJournalModal();
+  // Award 1 pt only on new entry (not edit)
+  if(isNew){
+    await loadPPState();
+    const prevPts = calcPoints(ppState);
+    ppState.journal = ppState.journal||{};
+    ppState.journal[today] = true;
+    await savePPState();
+    const newPts = calcPoints(ppState) + 1; // +1 for journal
+    ppState._journalPts = (ppState._journalPts||0) + 1;
+    await savePPState();
+    renderAvatar(calcTotalPts(ppState));
+    showToast('+1 pt ✨ Entry saved!');
+  } else {
+    showToast('Entry updated ✓');
+  }
+  renderJournalCard();
+  if(journalHistoryOpen) renderJournalHistory();
+}
+
+// ── POSTPARTUM ────────────────────────────────────────────────────────────────
 const PP_PARCS = [
   {id:'cottier',name:'Parc Louis Cottier',location:'Carouge',tags:['Promenade','Jeux','Expo']},
   {id:'halles',name:'Parc des Halles',location:'Carouge',tags:['Promenade']},
@@ -1222,8 +1512,9 @@ const PP_PARCS = [
 async function renderPostpartum(){
   const{data}=await db.from('postpartum_state').select('*').eq('id',1).single();
   const state=data?.state||{activities:{},parcs:{}};
-  const pts=calcPoints(state);
+  const pts=calcTotalPts(state);
   renderAvatar(pts);
+  renderJournalCard();
 
   const actEl=document.getElementById('ppActivities');
   actEl.innerHTML=PP_ACTIVITIES.map(a=>{
@@ -1257,6 +1548,13 @@ let ppState={activities:{},parcs:{}};
 async function loadPPState(){
   const{data}=await db.from('postpartum_state').select('*').eq('id',1).single();
   ppState=data?.state||{activities:{},parcs:{}};
+  // Load custom activities if saved
+  if(ppState.customActivities && ppState.customActivities.length){
+    PP_ACTIVITIES = ppState.customActivities;
+  } else {
+    PP_ACTIVITIES = [...DEFAULT_ACTIVITIES];
+  }
+  rebuildActivityPoints();
 }
 
 async function savePPState(){
@@ -1267,11 +1565,11 @@ async function savePPState(){
 
 async function togglePPActivity(id){
   await loadPPState();
-  const prevPts=calcPoints(ppState);
+  const prevPts=calcTotalPts(ppState);
   ppState.activities[id]=(ppState.activities[id]||0)+1;
   if(ppState.activities[id]>20)ppState.activities[id]=0;
   await savePPState();
-  const newPts=calcPoints(ppState);
+  const newPts=calcTotalPts(ppState);
   const levelChanged=getLevel(newPts).min!==getLevel(prevPts).min;
   renderAvatar(newPts, levelChanged);
   if(levelChanged)showToast('🎉 Level up! '+getLevel(newPts).title);
@@ -1281,10 +1579,10 @@ async function togglePPActivity(id){
 
 async function toggleParc(id){
   await loadPPState();
-  const prevPts=calcPoints(ppState);
+  const prevPts=calcTotalPts(ppState);
   ppState.parcs[id]=!ppState.parcs[id];
   await savePPState();
-  const newPts=calcPoints(ppState);
+  const newPts=calcTotalPts(ppState);
   const levelChanged=getLevel(newPts).min!==getLevel(prevPts).min;
   renderAvatar(newPts, levelChanged);
   if(ppState.parcs[id]){
