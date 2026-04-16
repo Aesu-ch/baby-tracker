@@ -1320,29 +1320,50 @@ function renderActivitiesEditorList(){
     return;
   }
   el.innerHTML = editingActivities.map((a,i)=>`
-    <div class="act-editor-row">
+    <div class="act-editor-row" id="actrow_${i}">
       <div class="act-editor-icon">${a.icon}</div>
       <div class="act-editor-name">${a.name}</div>
       <div class="act-editor-pts">+${a.pts} pts</div>
       <div class="act-editor-btns">
-        <button class="icon-btn" onclick="editActivity(${i})">✏️</button>
+        <button class="icon-btn" onclick="showInlineEdit(${i})">✏️</button>
         <button class="icon-btn delete" onclick="deleteActivity(${i})">🗑</button>
+      </div>
+    </div>
+    <div id="actedit_${i}" style="display:none;background:var(--cream);border-radius:10px;padding:10px;margin-bottom:6px;gap:8px;flex-direction:column">
+      <div style="display:grid;grid-template-columns:44px 1fr;gap:8px">
+        <input class="form-input" id="editIcon_${i}" value="${a.icon}" style="text-align:center;font-size:18px;padding:6px">
+        <input class="form-input" id="editName_${i}" value="${a.name}" style="font-size:13px;padding:6px 10px">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;color:#888">Points:</span>
+        <input class="form-input" type="number" id="editPts_${i}" value="${a.pts}" min="1" max="20" style="width:60px;text-align:center;padding:6px">
+        <button onclick="applyInlineEdit(${i})" style="flex:1;background:var(--terra);color:white;border:none;border-radius:8px;padding:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Save</button>
+        <button onclick="cancelInlineEdit(${i})" style="background:var(--cream);border:1.5px solid var(--warm-sand);color:#888;border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">✕</button>
       </div>
     </div>`).join('');
 }
 
-function editActivity(i){
-  const a = editingActivities[i];
-  const name = prompt(`Edit name for ${a.icon} ${a.name}:`, a.name);
-  if(name===null) return;
-  const pts = parseInt(prompt(`Points for this activity:`, a.pts));
-  if(isNaN(pts)||pts<1) return;
-  editingActivities[i] = {...a, name: name.trim()||a.name, pts};
+function showInlineEdit(i){
+  document.querySelectorAll('[id^="actedit_"]').forEach(el=>el.style.display='none');
+  const edit = document.getElementById('actedit_'+i);
+  edit.style.display='flex';
+  edit.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function cancelInlineEdit(i){
+  document.getElementById('actedit_'+i).style.display='none';
+}
+
+function applyInlineEdit(i){
+  const icon = document.getElementById('editIcon_'+i).value.trim()||editingActivities[i].icon;
+  const name = document.getElementById('editName_'+i).value.trim();
+  const pts = parseInt(document.getElementById('editPts_'+i).value)||editingActivities[i].pts;
+  if(!name){ showToast('Name cannot be empty'); return; }
+  editingActivities[i] = {...editingActivities[i], icon, name, pts};
   renderActivitiesEditorList();
 }
 
 function deleteActivity(i){
-  if(!confirm(`Remove "${editingActivities[i].name}"?`)) return;
   editingActivities.splice(i,1);
   renderActivitiesEditorList();
 }
