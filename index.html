@@ -198,7 +198,37 @@
   .upload-text{font-size:14px;color:var(--terra);font-weight:600;}
   .upload-sub{font-size:12px;color:#aaa;margin-top:4px;}
 
-  /* MEDICAL */
+  /* AVATAR / GAMIFICATION */
+  .avatar-card{background:linear-gradient(135deg,#3D2314 0%,#8B4513 100%);margin:0 16px;border-radius:20px;padding:18px 20px;display:flex;align-items:center;gap:16px;box-shadow:0 6px 24px rgba(61,35,20,0.35);margin-top:16px;position:relative;overflow:hidden;}
+  .avatar-card::after{content:'';position:absolute;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.05);top:-40px;right:-30px;}
+  .avatar-left{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;}
+  .avatar-emoji{font-size:52px;line-height:1;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.3));transition:all 0.5s cubic-bezier(0.34,1.56,0.64,1);}
+  .avatar-level-badge{background:var(--gold);color:#3D2314;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;}
+  .avatar-right{flex:1;}
+  .avatar-title{color:white;font-family:'DM Serif Display',serif;font-size:17px;line-height:1.2;}
+  .avatar-pts{color:var(--gold);font-size:13px;font-weight:600;margin-top:2px;}
+  .avatar-bar-wrap{background:rgba(255,255,255,0.15);border-radius:10px;height:8px;margin-top:8px;overflow:hidden;}
+  .avatar-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--blush));border-radius:10px;transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1);}
+  .avatar-next{color:rgba(255,255,255,0.55);font-size:10px;margin-top:4px;}
+  @keyframes levelUp{0%{transform:scale(1)}30%{transform:scale(1.4) rotate(-10deg)}60%{transform:scale(1.3) rotate(8deg)}100%{transform:scale(1)}}
+  .avatar-emoji.leveling{animation:levelUp 0.6s ease forwards;}
+
+  /* POSTPARTUM */
+  .pp-activities{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;}
+  .pp-activity{background:white;border-radius:14px;padding:12px;box-shadow:0 2px 10px var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;border:2px solid transparent;transition:all 0.2s;text-align:center;}
+  .pp-activity.done{background:linear-gradient(135deg,var(--soft-peach),var(--warm-sand));border-color:var(--blush);}
+  .pp-activity-icon{font-size:28px;}
+  .pp-activity-name{font-size:12px;font-weight:600;color:var(--deep);}
+  .pp-activity-count{font-size:10px;color:var(--terra);font-weight:600;background:var(--soft-peach);padding:2px 8px;border-radius:10px;}
+  .parc-row{background:white;border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 2px 8px var(--shadow);display:flex;align-items:flex-start;gap:10px;cursor:pointer;border:2px solid transparent;transition:all 0.2s;}
+  .parc-row.visited{background:var(--sage-light);border-color:var(--sage);}
+  .parc-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--warm-sand);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;margin-top:1px;transition:all 0.15s;}
+  .parc-check.visited{background:var(--sage);border-color:var(--sage);color:white;}
+  .parc-info{flex:1;}
+  .parc-name{font-size:14px;font-weight:600;color:var(--deep);}
+  .parc-location{font-size:11px;color:#888;margin-top:1px;}
+  .parc-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;}
+  .parc-tag{font-size:10px;background:var(--cream);color:var(--terra);padding:2px 6px;border-radius:8px;font-weight:500;}
   .medical-card{background:white;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 12px var(--shadow);}
   .vaccine-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--cream);}
   .vaccine-row:last-child{border-bottom:none;}
@@ -393,27 +423,7 @@
     <div style="grid-column:1/-1;text-align:center;padding:30px;color:#bbb;font-size:14px">No memories yet 📸</div>
   </div>
 </div>
-<div class="page" id="pageGrowth">
-  <div class="section">
-    <div class="section-title">📏 Growth Tracking</div>
-    <div class="growth-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <span style="font-family:'DM Serif Display',serif;font-size:16px">Add measurement</span>
-        <button onclick="openGrowthModal()" style="background:var(--terra);color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Add</button>
-      </div>
-      <div class="growth-inputs">
-        <div class="growth-input-group"><div class="growth-val" id="latestWeightVal">–</div><div class="growth-unit">kg</div><div class="growth-label">Latest weight</div></div>
-        <div class="growth-input-group"><div class="growth-val" id="latestHeightVal">–</div><div class="growth-unit">cm</div><div class="growth-label">Latest height</div></div>
-      </div>
-      <div class="growth-percentile" id="percentileInfo">Add measurements to see growth percentile</div>
-    </div>
-    <div class="growth-card"><div class="analysis-title">⚖️ Weight curve</div><div id="weightChart" style="background:var(--cream);border-radius:12px;padding:12px;height:140px;overflow:hidden"></div></div>
-    <div class="growth-card"><div class="analysis-title">📏 Height curve</div><div id="heightChart" style="background:var(--cream);border-radius:12px;padding:12px;height:140px;overflow:hidden"></div></div>
-    <div class="growth-card"><div class="analysis-title">📋 History</div><div id="growthHistory"></div></div>
-  </div>
-</div>
-
-<!-- MEDICAL PAGE -->
+<!-- MEDICAL PAGE (includes Growth) -->
 <div class="page" id="pageMedical">
   <div class="section">
     <div class="section-title">💉 Vaccinations</div>
@@ -442,6 +452,50 @@
       </div>
       <div id="pediatricList"><div style="color:#bbb;font-size:13px;text-align:center;padding:16px">No visits recorded yet</div></div>
     </div>
+
+    <div class="section-title" style="margin-top:8px">📏 Growth Tracking</div>
+    <div class="growth-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-family:'DM Serif Display',serif;font-size:16px">Add measurement</span>
+        <button onclick="openGrowthModal()" style="background:var(--terra);color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Add</button>
+      </div>
+      <div class="growth-inputs">
+        <div class="growth-input-group"><div class="growth-val" id="latestWeightVal">–</div><div class="growth-unit">kg</div><div class="growth-label">Latest weight</div></div>
+        <div class="growth-input-group"><div class="growth-val" id="latestHeightVal">–</div><div class="growth-unit">cm</div><div class="growth-label">Latest height</div></div>
+      </div>
+      <div class="growth-percentile" id="percentileInfo">Add measurements to see growth percentile</div>
+    </div>
+    <div class="growth-card"><div class="analysis-title">⚖️ Weight curve</div><div id="weightChart" style="background:var(--cream);border-radius:12px;padding:12px;height:140px;overflow:hidden"></div></div>
+    <div class="growth-card"><div class="analysis-title">📏 Height curve</div><div id="heightChart" style="background:var(--cream);border-radius:12px;padding:12px;height:140px;overflow:hidden"></div></div>
+    <div class="growth-card"><div class="analysis-title">📋 Growth History</div><div id="growthHistory"></div></div>
+  </div>
+</div>
+
+<!-- POSTPARTUM PAGE -->
+<div class="page" id="pagePostpartum">
+  <!-- AVATAR CARD -->
+  <div class="avatar-card" id="avatarCard">
+    <div class="avatar-left">
+      <div class="avatar-emoji" id="avatarEmoji">😴</div>
+      <div class="avatar-level-badge" id="avatarBadge">Lvl 1</div>
+    </div>
+    <div class="avatar-right">
+      <div class="avatar-title" id="avatarTitle">Rookie Maman</div>
+      <div class="avatar-pts"><span id="avatarPts">0</span> pts</div>
+      <div class="avatar-bar-wrap">
+        <div class="avatar-bar-fill" id="avatarBarFill" style="width:0%"></div>
+      </div>
+      <div class="avatar-next" id="avatarNext">10 pts to next level</div>
+    </div>
+  </div>
+
+  <div class="section" style="padding-bottom:0;padding-top:12px">
+    <div class="section-title">🌸 Self-care Activities</div>
+    <div class="pp-activities" id="ppActivities"></div>
+
+    <div class="section-title" style="margin-top:16px">🌳 Parcs à visiter</div>
+    <div style="font-size:12px;color:#aaa;margin-bottom:10px">Geneva parks — tap to mark as visited</div>
+    <div id="ppParcList"></div>
   </div>
 </div>
 
@@ -475,7 +529,7 @@
   <button class="nav-item active" onclick="showPage('pageToday','navToday')" id="navToday"><div class="nav-icon">📋</div><div class="nav-label">Today</div></button>
   <button class="nav-item" onclick="showPage('pageAnalysis','navAnalysis')" id="navAnalysis"><div class="nav-icon">📊</div><div class="nav-label">Stats</div></button>
   <button class="nav-item" onclick="showPage('pageMemories','navMemories')" id="navMemories"><div class="nav-icon">📸</div><div class="nav-label">Memories</div></button>
-  <button class="nav-item" onclick="showPage('pageGrowth','navGrowth')" id="navGrowth"><div class="nav-icon">📏</div><div class="nav-label">Growth</div></button>
+  <button class="nav-item" onclick="showPage('pagePostpartum','navPostpartum')" id="navPostpartum"><div class="nav-icon">🌸</div><div class="nav-label">Maman</div></button>
   <button class="nav-item" onclick="showPage('pageMedical','navMedical')" id="navMedical"><div class="nav-icon">💉</div><div class="nav-label">Medical</div></button>
   <button class="nav-item" onclick="showPage('pageSettings','navSettings')" id="navSettings"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></button>
 </div>
@@ -673,10 +727,9 @@ function showPage(pageId,navId){
   document.getElementById('addBar').classList.toggle('visible',isToday);
   document.body.style.paddingBottom=isToday?'130px':'80px';
   if(pageId==='pageAnalysis')renderAnalysis();
-  if(pageId==='pageGrowth')renderGrowth();
-  if(pageId==='pageHistory')renderHistory();
+  if(pageId==='pageMedical'){renderMedical();renderGrowth();}
   if(pageId==='pageMemories')renderMemories();
-  if(pageId==='pageMedical')renderMedical();
+  if(pageId==='pagePostpartum')renderPostpartum();
   if(pageId==='pageSettings'){loadSettingsForm();renderHistory();}
 }
 
@@ -1075,6 +1128,170 @@ async function deleteMemory(id){
   await db.from('memories').delete().eq('id',id);
   setSyncing(false);
   renderMemories();
+}
+
+// ── GAMIFICATION ─────────────────────────────────────────────────────────────
+const LEVELS = [
+  { min:0,   max:9,   emoji:'😴', title:'Rookie Maman',      desc:'Just getting started!' },
+  { min:10,  max:24,  emoji:'🙂', title:'Recovering Hero',   desc:'You\'re doing great!' },
+  { min:25,  max:49,  emoji:'😊', title:'Glowing Maman',     desc:'Self-care queen!' },
+  { min:50,  max:79,  emoji:'😄', title:'Super Maman',       desc:'Unstoppable!' },
+  { min:80,  max:119, emoji:'🥰', title:'Radiant Maman',     desc:'Absolutely thriving!' },
+  { min:120, max:169, emoji:'✨', title:'Wonder Maman',      desc:'You\'re a legend!' },
+  { min:170, max:239, emoji:'🌟', title:'Golden Maman',      desc:'Pure gold!' },
+  { min:240, max:999, emoji:'👑', title:'Queen Maman',       desc:'Crown earned! 👑' },
+];
+
+const ACTIVITY_POINTS = {
+  lunch:5, walk:3, museum:4, parc_play:3, coffee:2,
+  haircut:6, nails:5, massage:8, yoga:4, babysign:5, boat:4, picnic:3
+};
+const PARC_POINTS = 4;
+
+function calcPoints(state) {
+  let pts = 0;
+  Object.entries(state.activities || {}).forEach(([id, count]) => {
+    pts += (ACTIVITY_POINTS[id] || 2) * count;
+  });
+  Object.values(state.parcs || {}).forEach(visited => { if(visited) pts += PARC_POINTS; });
+  return pts;
+}
+
+function getLevel(pts) {
+  return LEVELS.slice().reverse().find(l => pts >= l.min) || LEVELS[0];
+}
+
+function renderAvatar(pts, animate=false) {
+  const level = getLevel(pts);
+  const nextLevel = LEVELS.find(l => l.min > pts);
+  const ptsToNext = nextLevel ? nextLevel.min - pts : 0;
+  const pct = nextLevel ? Math.round(((pts - level.min) / (nextLevel.min - level.min)) * 100) : 100;
+  const lvlIdx = LEVELS.indexOf(level);
+
+  document.getElementById('avatarEmoji').textContent = level.emoji;
+  document.getElementById('avatarBadge').textContent = `Lvl ${lvlIdx + 1}`;
+  document.getElementById('avatarTitle').textContent = level.title;
+  document.getElementById('avatarPts').textContent = pts;
+  document.getElementById('avatarBarFill').style.width = pct + '%';
+  document.getElementById('avatarNext').textContent = ptsToNext > 0 ? `${ptsToNext} pts to next level` : '🏆 Max level reached!';
+
+  if (animate) {
+    const el = document.getElementById('avatarEmoji');
+    el.classList.remove('leveling');
+    void el.offsetWidth;
+    el.classList.add('leveling');
+    setTimeout(() => el.classList.remove('leveling'), 700);
+  }
+}
+
+// ── POSTPARTUM ────────────────────────────────────────────────────────────────
+const PP_ACTIVITIES = [
+  {id:'lunch',icon:'🍽️',name:'Lunch with friends'},
+  {id:'walk',icon:'🚶‍♀️',name:'Walk in a park'},
+  {id:'museum',icon:'🏛️',name:'Visit a museum'},
+  {id:'parc_play',icon:'🛝',name:'Parc Play'},
+  {id:'coffee',icon:'☕',name:'Coffee break'},
+  {id:'haircut',icon:'✂️',name:'Hair cut'},
+  {id:'nails',icon:'💅',name:'Nails'},
+  {id:'massage',icon:'💆‍♀️',name:'Massage'},
+  {id:'yoga',icon:'🧘‍♀️',name:'Yoga / Sport'},
+  {id:'babysign',icon:'🤟',name:'Baby signing class'},
+  {id:'boat',icon:'⛵',name:'Mouettes boat ride'},
+  {id:'picnic',icon:'🧺',name:'Picnic by the lake'},
+];
+
+const PP_PARCS = [
+  {id:'cottier',name:'Parc Louis Cottier',location:'Carouge',tags:['Promenade','Jeux','Expo']},
+  {id:'halles',name:'Parc des Halles',location:'Carouge',tags:['Promenade']},
+  {id:'battelle',name:'Parc Battelle',location:'Carouge',tags:['Promenade']},
+  {id:'eglantyne',name:'Parc Eglantyne-Jebb',location:'Carouge',tags:['Promenade','Jeux']},
+  {id:'bertrand',name:'Parc Bertrand',location:'Champel',tags:['Promenade','Jeux','Pataugeoire']},
+  {id:'batie',name:'Bois de la Bâtie',location:'Petit-Lancy',tags:['Promenade','Jeux','Animaux']},
+  {id:'bastions',name:'Parc des Bastions',location:'Centre-ville',tags:['Promenade','Échecs géant']},
+  {id:'anglais',name:'Jardin Anglais',location:'Bord du lac',tags:['Promenade','Vue lac']},
+  {id:'grange',name:'Parc La Grange',location:'Eaux-Vives',tags:['Promenade','Roseraie','Vue lac']},
+  {id:'beaulieu',name:'Parc Beaulieu',location:'Servette',tags:['Promenade','Jeux','Animaux','Pataugeoire']},
+  {id:'trembley',name:'Parc de Trembley',location:'Servette',tags:['Promenade','Jeux','Pataugeoire']},
+  {id:'monrepos',name:'Parc Mon Repos',location:'Bord du lac',tags:['Promenade','Vue lac']},
+  {id:'perle',name:'Parc de la Perle du Lac',location:'Bord du lac',tags:['Promenade','Vue lac']},
+  {id:'ariana',name:"Parc de l'Ariana",location:'ONU',tags:['Promenade','Sculptures']},
+  {id:'botanical',name:'Jardin Botanique',location:'Pregny-Chambésy',tags:['Promenade','Animaux','Merry-go-round']},
+  {id:'eauxvives',name:'Parc des Eaux-Vives',location:'Bord du lac',tags:['Promenade','Vue lac','Baby Plage']},
+];
+
+async function renderPostpartum(){
+  const{data}=await db.from('postpartum_state').select('*').eq('id',1).single();
+  const state=data?.state||{activities:{},parcs:{}};
+  const pts=calcPoints(state);
+  renderAvatar(pts);
+
+  const actEl=document.getElementById('ppActivities');
+  actEl.innerHTML=PP_ACTIVITIES.map(a=>{
+    const count=state.activities[a.id]||0;
+    const done=count>0;
+    const ptVal=ACTIVITY_POINTS[a.id]||2;
+    return`<div class="pp-activity ${done?'done':''}" onclick="togglePPActivity('${a.id}')">
+      <div class="pp-activity-icon">${a.icon}</div>
+      <div class="pp-activity-name">${a.name}</div>
+      <div style="font-size:9px;color:var(--sage);margin-top:-2px">+${ptVal} pts each</div>
+      ${count>0?`<div class="pp-activity-count">${count}×</div>`:''}
+    </div>`;
+  }).join('');
+
+  const parcEl=document.getElementById('ppParcList');
+  parcEl.innerHTML=PP_PARCS.map(p=>{
+    const visited=state.parcs[p.id]||false;
+    return`<div class="parc-row ${visited?'visited':''}" onclick="toggleParc('${p.id}')">
+      <div class="parc-check ${visited?'visited':''}">${visited?'✓':''}</div>
+      <div class="parc-info">
+        <div class="parc-name">${p.name}</div>
+        <div class="parc-location">📍 ${p.location}</div>
+        <div class="parc-tags">${p.tags.map(t=>`<span class="parc-tag">${t}</span>`).join('')}${!visited?`<span class="parc-tag" style="background:var(--sage-light);color:var(--sage)">+${PARC_POINTS} pts</span>`:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let ppState={activities:{},parcs:{}};
+
+async function loadPPState(){
+  const{data}=await db.from('postpartum_state').select('*').eq('id',1).single();
+  ppState=data?.state||{activities:{},parcs:{}};
+}
+
+async function savePPState(){
+  setSyncing(true);
+  await db.from('postpartum_state').upsert({id:1,state:ppState,updated_at:new Date().toISOString()},{onConflict:'id'});
+  setSyncing(false);
+}
+
+async function togglePPActivity(id){
+  await loadPPState();
+  const prevPts=calcPoints(ppState);
+  ppState.activities[id]=(ppState.activities[id]||0)+1;
+  if(ppState.activities[id]>20)ppState.activities[id]=0;
+  await savePPState();
+  const newPts=calcPoints(ppState);
+  const levelChanged=getLevel(newPts).min!==getLevel(prevPts).min;
+  renderAvatar(newPts, levelChanged);
+  if(levelChanged)showToast('🎉 Level up! '+getLevel(newPts).title);
+  else showToast('+'+ACTIVITY_POINTS[id]+' pts ✨');
+  renderPostpartum();
+}
+
+async function toggleParc(id){
+  await loadPPState();
+  const prevPts=calcPoints(ppState);
+  ppState.parcs[id]=!ppState.parcs[id];
+  await savePPState();
+  const newPts=calcPoints(ppState);
+  const levelChanged=getLevel(newPts).min!==getLevel(prevPts).min;
+  renderAvatar(newPts, levelChanged);
+  if(ppState.parcs[id]){
+    if(levelChanged)showToast('🎉 Level up! '+getLevel(newPts).title);
+    else showToast('+'+PARC_POINTS+' pts ✨');
+  }
+  renderPostpartum();
 }
 
 // ── MEDICAL ───────────────────────────────────────────────────────────────────
