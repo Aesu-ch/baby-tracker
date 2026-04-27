@@ -1622,34 +1622,37 @@ const PP_PARCS = [
 ];
 
 async function renderPostpartum(){
-  const{data}=await db.from('postpartum_state').select('*').eq('id',1).single();
-  const state=data?.state||{activities:{},parcs:{}};
+  // Use in-memory ppState — no extra DB fetch needed
+  const state = ppState;
   const pts=calcTotalPts(state);
   renderAvatar(pts);
   renderJournalCard();
 
   const actEl=document.getElementById('ppActivities');
+  if(!actEl) return;
   actEl.innerHTML=PP_ACTIVITIES.map(a=>{
-    const count=state.activities[a.id]||0;
-    const done=count>0;
-    const ptVal=ACTIVITY_POINTS[a.id]||2;
-    return`<div class="pp-activity ${done?'done':''}" onclick="togglePPActivity('${a.id}')">
+    const wk=getWeekKey();
+    const weekCount=(state.weeklyActivities?.[wk]?.[a.id])||0;
+    const totalCount=state.activities?.[a.id]||0;
+    const doneThisWeek=weekCount>0;
+    return`<div class="pp-activity ${doneThisWeek?'done':''}" onclick="togglePPActivity('${a.id}')">
       <div class="pp-activity-icon">${a.icon}</div>
       <div class="pp-activity-name">${a.name}</div>
-      <div style="font-size:8px;color:var(--sage);margin-top:-1px">+${ptVal} pts</div>
-      ${count>0?`<div class="pp-activity-count">${count}×</div>`:''}
+      <div style="font-size:8px;color:var(--sage);margin-top:-1px">+1 pt/week</div>
+      ${totalCount>0?`<div class="pp-activity-count">${totalCount}×</div>`:''}
     </div>`;
   }).join('');
 
   const parcEl=document.getElementById('ppParcList');
+  if(!parcEl) return;
   parcEl.innerHTML=PP_PARCS.map(p=>{
-    const visited=state.parcs[p.id]||false;
+    const visited=state.parcs?.[p.id]||false;
     return`<div class="parc-row ${visited?'visited':''}" onclick="toggleParc('${p.id}')">
       <div class="parc-check ${visited?'visited':''}">${visited?'✓':''}</div>
       <div class="parc-info">
         <div class="parc-name">${p.name}</div>
         <div class="parc-location">📍 ${p.location}</div>
-        <div class="parc-tags">${p.tags.map(t=>`<span class="parc-tag">${t}</span>`).join('')}${!visited?`<span class="parc-tag" style="background:var(--sage-light);color:var(--sage)">+${PARC_POINTS} pts</span>`:''}</div>
+        <div class="parc-tags">${p.tags.map(t=>`<span class="parc-tag">${t}</span>`).join('')}</div>
       </div>
     </div>`;
   }).join('');
