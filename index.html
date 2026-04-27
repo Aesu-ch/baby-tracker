@@ -198,6 +198,10 @@
   .upload-text{font-size:14px;color:var(--terra);font-weight:600;}
   .upload-sub{font-size:12px;color:#aaa;margin-top:4px;}
 
+  .wakeup-selector{display:flex;gap:4px;justify-content:center;margin-bottom:4px;}
+  .wakeup-btn{background:var(--cream);border:1.5px solid var(--warm-sand);border-radius:8px;padding:4px 6px;font-size:11px;font-weight:600;cursor:pointer;color:var(--deep);transition:all 0.15s;font-family:'DM Sans',sans-serif;}
+  .wakeup-btn.active{background:var(--terra);border-color:var(--terra);color:white;}
+
   /* AVATAR / GAMIFICATION */
   .avatar-card{background:linear-gradient(135deg,#3D2314 0%,#8B4513 100%);margin:0 16px;border-radius:20px;padding:18px 20px;display:flex;align-items:center;gap:16px;box-shadow:0 6px 24px rgba(61,35,20,0.35);margin-top:16px;position:relative;overflow:hidden;}
   .avatar-card::after{content:'';position:absolute;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.05);top:-40px;right:-30px;}
@@ -373,8 +377,15 @@
       <div class="ws-item" onclick="editWakeTime()">
         <div class="ws-icon">🌅</div><div class="ws-time" id="wakeTimeDisplay">–</div><div class="ws-label">Wake up</div>
       </div>
-      <div style="text-align:center">
-        <div style="font-size:22px;color:var(--sage);opacity:0.5">☁️</div>
+      <div style="text-align:center;flex:1">
+        <div style="font-size:11px;color:#666;margin-bottom:6px;font-weight:500">Night wakeups</div>
+        <div class="wakeup-selector" id="wakeupSelector">
+          <button class="wakeup-btn active" onclick="setNightWakeups(0)">😴</button>
+          <button class="wakeup-btn" onclick="setNightWakeups(1)">1×</button>
+          <button class="wakeup-btn" onclick="setNightWakeups(2)">2×</button>
+          <button class="wakeup-btn" onclick="setNightWakeups(3)">3×</button>
+          <button class="wakeup-btn" onclick="setNightWakeups(4)">4+</button>
+        </div>
         <div class="night-sleep-info" id="nightSleepInfo">–</div>
       </div>
       <div class="ws-item" onclick="editSleepTime()">
@@ -396,27 +407,18 @@
 <div class="page" id="pageAnalysis">
   <div class="section">
     <div class="section-title">📊 Analysis <span style="font-size:13px;font-weight:400;font-family:'DM Sans',sans-serif;color:#aaa">last 7 days</span></div>
+
     <div class="analysis-card">
-      <div class="analysis-title">🍼 Feeding</div>
+      <div class="analysis-title">🌙 Night sleep</div>
       <div class="avg-row">
-        <div><div class="avg-val" id="avgMl">–</div><div class="avg-label">avg ml/day</div></div>
-        <div><div class="avg-val" id="avgFeeds">–</div><div class="avg-label">avg feeds/day</div></div>
-        <div><div class="avg-val" id="avgBetween">–</div><div class="avg-label">avg hrs between</div></div>
+        <div><div class="avg-val" id="avgNightSleep">–</div><div class="avg-label">avg hrs/night</div></div>
+        <div><div class="avg-val" id="countFullNight">–</div><div class="avg-label">full nights (7d)</div></div>
+        <div><div class="avg-val" id="countWakeups">–</div><div class="avg-label">nights w/ wakeup</div></div>
       </div>
-      <div class="bar-chart" id="mlBarChart"></div>
+      <div style="font-size:11px;color:#aaa;margin:8px 0 4px">sleep hrs per night</div>
+      <div class="bar-chart" id="nightBarChart"></div>
     </div>
-    <div class="analysis-card">
-      <div class="analysis-title">😴 Sleep & Naps</div>
-      <div class="avg-row">
-        <div><div class="avg-val" id="avgSleep">–</div><div class="avg-label">avg night sleep</div></div>
-        <div><div class="avg-val" id="avgNap">–</div><div class="avg-label">avg nap time</div></div>
-      </div>
-      <div class="bar-chart" id="sleepBarChart"></div>
-    </div>
-    <div class="analysis-card">
-      <div class="analysis-title">⏰ Feed timing</div>
-      <div id="feedTimingList" style="display:flex;flex-direction:column;gap:6px;"></div>
-    </div>
+
     <div class="analysis-card">
       <div class="analysis-title">💊 Medication</div>
       <div class="avg-row">
@@ -424,6 +426,29 @@
         <div><div class="avg-val" id="avgFlat">–</div><div class="avg-label">Flatulex days (7d)</div></div>
       </div>
     </div>
+
+    <div class="analysis-card">
+      <div class="analysis-title">🍼 Feeding</div>
+      <div class="avg-row">
+        <div><div class="avg-val" id="avgMl">–</div><div class="avg-label">avg ml/day</div></div>
+        <div><div class="avg-val" id="avgFeeds">–</div><div class="avg-label">avg feeds/day</div></div>
+        <div><div class="avg-val" id="avgBetween">–</div><div class="avg-label">avg hrs between</div></div>
+      </div>
+      <div style="font-size:11px;color:#aaa;margin:8px 0 4px">ml per day</div>
+      <div class="bar-chart" id="mlBarChart"></div>
+    </div>
+
+    <div class="analysis-card">
+      <div class="analysis-title">☀️ Naps</div>
+      <div class="avg-row">
+        <div><div class="avg-val" id="avgNapCount">–</div><div class="avg-label">avg naps/day</div></div>
+        <div><div class="avg-val" id="avgNapTotal">–</div><div class="avg-label">avg total/day</div></div>
+        <div><div class="avg-val" id="avgNapDur">–</div><div class="avg-label">avg nap length</div></div>
+      </div>
+      <div style="font-size:11px;color:#aaa;margin:8px 0 4px">total nap time per day</div>
+      <div class="bar-chart" id="napBarChart"></div>
+    </div>
+
     <div class="analysis-card">
       <div class="analysis-title">🩲 Diapers</div>
       <div class="avg-row">
@@ -878,6 +903,7 @@ function renderDay(){
   document.getElementById('bathCheck').textContent=dayData.bath_today?'✅':'○';
   document.getElementById('wakeTimeDisplay').textContent=dayData.wake_time||'–';
   document.getElementById('sleepTimeDisplay').textContent=dayData.sleep_time||'–';
+  renderWakeupSelector(dayData.night_wakeups??-1);
   // Diapers
   const dc=dayData.diaper_count||0;
   document.getElementById('diaperCount').textContent=dc;
@@ -1039,6 +1065,16 @@ async function toggleMed(med){
   renderDay();
 }
 
+async function setNightWakeups(val){
+  await upsertDayData({night_wakeups:val});
+  renderDay();
+}
+
+function renderWakeupSelector(val){
+  const btns=document.querySelectorAll('.wakeup-btn');
+  btns.forEach((b,i)=>b.classList.toggle('active',i===val));
+}
+
 function closeFab(){}
 
 function getLast7Days(){const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);}return days;}
@@ -1051,6 +1087,8 @@ async function renderAnalysis(){
     db.from('day_data').select('*').eq('date_key',k).single()
   ])));
   const all=results.map(([f,n,d],i)=>({key:days[i],feeds:f.data||[],naps:n.data||[],day:d.data||{}}));
+
+  // ── FEEDING ──
   const mlVals=all.map(d=>d.feeds.reduce((s,f)=>s+f.ml,0));
   const fcounts=all.map(d=>d.feeds.length);
   const avgMl=mlVals.filter(v=>v>0).length?Math.round(mlVals.filter(v=>v>0).reduce((s,v)=>s+v,0)/mlVals.filter(v=>v>0).length):0;
@@ -1061,37 +1099,53 @@ async function renderAnalysis(){
   document.getElementById('avgMl').textContent=avgMl||'–';
   document.getElementById('avgFeeds').textContent=avgFeeds||'–';
   document.getElementById('avgBetween').textContent=avgBetween?avgBetween+'h':'–';
-  const napVals=all.map(d=>d.naps.reduce((s,n)=>s+napDur(n),0));
-  const avgNapMin=napVals.filter(v=>v>0).length?Math.round(napVals.filter(v=>v>0).reduce((s,v)=>s+v,0)/napVals.filter(v=>v>0).length):0;
-  document.getElementById('avgSleep').textContent='–';
-  document.getElementById('avgNap').textContent=avgNapMin?fmtDur(avgNapMin):'–';
   renderBarChart('mlBarChart',mlVals,days,'#F2A97E');
-  renderBarChart('sleepBarChart',napVals.map(v=>v/60),days,'#C5B8E8');
+
+  // ── NAPS ──
+  const napCountVals=all.map(d=>d.naps.length);
+  const napTotalMins=all.map(d=>d.naps.reduce((s,n)=>s+napDur(n),0));
+  const allIndivNaps=all.flatMap(d=>d.naps).map(n=>napDur(n)).filter(v=>v>0);
+  const avgNapCount=napCountVals.filter(v=>v>0).length?(napCountVals.filter(v=>v>0).reduce((s,v)=>s+v,0)/napCountVals.filter(v=>v>0).length).toFixed(1):0;
+  const avgNapTotal=napTotalMins.filter(v=>v>0).length?Math.round(napTotalMins.filter(v=>v>0).reduce((s,v)=>s+v,0)/napTotalMins.filter(v=>v>0).length):0;
+  const avgSingleNap=allIndivNaps.length?Math.round(allIndivNaps.reduce((s,v)=>s+v,0)/allIndivNaps.length):0;
+  document.getElementById('avgNapCount').textContent=avgNapCount||'–';
+  document.getElementById('avgNapTotal').textContent=avgNapTotal?fmtDur(avgNapTotal):'–';
+  document.getElementById('avgNapDur').textContent=avgSingleNap?fmtDur(avgSingleNap):'–';
+  renderBarChart('napBarChart',napTotalMins.map(v=>v/60),days,'#C5B8E8');
+
+  // ── NIGHT SLEEP ──
+  // For each day, look up previous day's sleep time
+  const prevKeys=days.map(k=>getPrevKey(k));
+  const prevDayRes=await Promise.all(prevKeys.map(k=>db.from('day_data').select('sleep_time').eq('date_key',k).single()));
+  const nightMins=all.map((d,i)=>{
+    const prevSleep=prevDayRes[i].data?.sleep_time;
+    if(!prevSleep||!d.day.wake_time)return 0;
+    const[sh,sm]=prevSleep.split(':').map(Number),[wh,wm]=d.day.wake_time.split(':').map(Number);
+    return Math.max(0,(wh*60+wm+24*60)-(sh*60+sm));
+  });
+  const nightDaysWithData=nightMins.filter(v=>v>0);
+  const avgNightH=nightDaysWithData.length?Math.round(nightDaysWithData.reduce((s,v)=>s+v,0)/nightDaysWithData.length):0;
+  const fullNights=all.filter(d=>(d.day.night_wakeups||0)===0&&d.day.wake_time).length;
+  const wakeupNights=all.filter(d=>(d.day.night_wakeups||0)>0).length;
+  document.getElementById('avgNightSleep').textContent=avgNightH?fmtDur(avgNightH):'–';
+  document.getElementById('countFullNight').textContent=fullNights||'–';
+  document.getElementById('countWakeups').textContent=wakeupNights||'–';
+  renderBarChart('nightBarChart',nightMins.map(v=>v/60),days,'#A8C8E8');
+
+  // ── MEDICATION ──
   document.getElementById('avgVitD').textContent=`${all.filter(d=>d.day.vit_d_given).length}/7`;
   document.getElementById('avgFlat').textContent=`${all.filter(d=>d.day.flat_given).length}/7`;
-  // Diapers 7d
+
+  // ── DIAPERS ──
   const diaperVals=all.map(d=>d.day.diaper_count||0);
   const totalDiapers7=diaperVals.reduce((s,v)=>s+v,0);
   const avgDiaper=diaperVals.filter(v=>v>0).length?(totalDiapers7/diaperVals.filter(v=>v>0).length).toFixed(1):0;
   document.getElementById('avgDiaperDay').textContent=avgDiaper||'–';
   document.getElementById('avgDiaperWeek').textContent=totalDiapers7||'–';
   renderBarChart('diaperBarChart',diaperVals,days,'#F5DEC8');
-  // Diapers 30d
   const days30=[];for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days30.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);}
   const res30=await Promise.all(days30.map(k=>db.from('day_data').select('diaper_count').eq('date_key',k).single()));
-  const total30=res30.reduce((s,r)=>s+(r.data?.diaper_count||0),0);
-  document.getElementById('avgDiaperMonth').textContent=total30||'–';
-  const allFeeds=[];all.forEach(d=>d.feeds.forEach(f=>allFeeds.push(f.time)));
-  const timingEl=document.getElementById('feedTimingList');
-  if(allFeeds.length){
-    const hc={};allFeeds.map(t=>parseInt(t)).forEach(h=>{hc[h]=(hc[h]||0)+1;});
-    timingEl.innerHTML=Object.entries(hc).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([h,c])=>`
-      <div style="display:flex;align-items:center;gap:10px;padding:4px 0">
-        <span style="font-size:13px;width:60px;color:#888">${String(h).padStart(2,'0')}:00</span>
-        <div style="flex:1;background:var(--cream);border-radius:6px;height:10px;overflow:hidden"><div style="height:100%;width:${Math.round(c/all.length*100)}%;background:var(--blush);border-radius:6px"></div></div>
-        <span style="font-size:12px;color:var(--terra);width:30px;text-align:right">${c}x</span>
-      </div>`).join('');
-  }else{timingEl.innerHTML='<div style="color:#bbb;font-size:13px;text-align:center;padding:10px">Not enough data yet</div>';}
+  document.getElementById('avgDiaperMonth').textContent=res30.reduce((s,r)=>s+(r.data?.diaper_count||0),0)||'–';
 }
 
 function renderBarChart(elId,vals,days,color){
@@ -1230,16 +1284,68 @@ async function deleteMemory(id){
 }
 
 // ── GAMIFICATION ─────────────────────────────────────────────────────────────
-const LEVELS = [
-  { min:0,   max:9,   emoji:'😴', title:'Rookie Maman',      desc:'Just getting started!' },
-  { min:10,  max:24,  emoji:'🙂', title:'Recovering Hero',   desc:'You\'re doing great!' },
-  { min:25,  max:49,  emoji:'😊', title:'Glowing Maman',     desc:'Self-care queen!' },
-  { min:50,  max:79,  emoji:'😄', title:'Super Maman',       desc:'Unstoppable!' },
-  { min:80,  max:119, emoji:'🥰', title:'Radiant Maman',     desc:'Absolutely thriving!' },
-  { min:120, max:169, emoji:'✨', title:'Wonder Maman',      desc:'You\'re a legend!' },
-  { min:170, max:239, emoji:'🌟', title:'Golden Maman',      desc:'Pure gold!' },
-  { min:240, max:999, emoji:'👑', title:'Queen Maman',       desc:'Crown earned! 👑' },
+// Weekly score: 1 pt per unique activity done this week, max 10 pts
+// Week resets every Sunday at midnight
+
+function getWeekKey(){
+  // Returns YYYY-Www key for current week (Mon-Sun)
+  const now=new Date();
+  const day=now.getDay(); // 0=Sun
+  const monday=new Date(now);
+  monday.setDate(now.getDate()-(day===0?6:day-1));
+  return`${monday.getFullYear()}-W${String(Math.ceil((monday.getDate()+(new Date(monday.getFullYear(),0,1).getDay()+5)%7)/7)).padStart(2,'0')}`;
+}
+
+function getWeekStartEnd(){
+  const now=new Date();
+  const day=now.getDay();
+  const monday=new Date(now);monday.setDate(now.getDate()-(day===0?6:day-1));monday.setHours(0,0,0,0);
+  const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);sunday.setHours(23,59,59,999);
+  return{start:monday,end:sunday};
+}
+
+function calcWeeklyPts(state){
+  const wk=getWeekKey();
+  const weekActs=state.weeklyActivities?.[wk]||{};
+  // 1 pt per activity done this week (regardless of how many times), max 10
+  const actPts=Object.values(weekActs).filter(v=>v>0).length;
+  // Journal this week
+  const journalThisWeek=state.weeklyJournal?.[wk]?1:0;
+  return Math.min(10, actPts + journalThisWeek);
+}
+
+const AVATAR_LEVELS=[
+  {min:0, emoji:'😴', title:'Just starting…'},
+  {min:2, emoji:'🙂', title:'Getting there!'},
+  {min:4, emoji:'😊', title:'Doing well!'},
+  {min:6, emoji:'😄', title:'Feeling good!'},
+  {min:8, emoji:'🥰', title:'Thriving!'},
+  {min:10,emoji:'👑', title:'Perfect week!'},
 ];
+
+function getLevel(pts){
+  return AVATAR_LEVELS.slice().reverse().find(l=>pts>=l.min)||AVATAR_LEVELS[0];
+}
+
+function renderAvatar(pts, animate=false){
+  const level=getLevel(pts);
+  const pct=Math.round((pts/10)*100);
+  const {start,end}=getWeekStartEnd();
+  const fmt=d=>d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+
+  document.getElementById('avatarEmoji').textContent=level.emoji;
+  document.getElementById('avatarBadge').textContent=`${pts}/10 pts`;
+  document.getElementById('avatarTitle').textContent=level.title;
+  document.getElementById('avatarPts').textContent=`This week: ${fmt(start)} – ${fmt(end)}`;
+  document.getElementById('avatarBarFill').style.width=pct+'%';
+  document.getElementById('avatarNext').textContent=pts>=10?'🏆 Perfect week!': `${10-pts} more ${10-pts===1?'activity':'activities'} for a perfect week`;
+
+  if(animate){
+    const el=document.getElementById('avatarEmoji');
+    el.classList.remove('leveling');void el.offsetWidth;el.classList.add('leveling');
+    setTimeout(()=>el.classList.remove('leveling'),700);
+  }
+}
 
 const DEFAULT_ACTIVITIES = [
   {id:'lunch',icon:'🍽️',name:'Lunch with friends',pts:5},
@@ -1260,18 +1366,8 @@ const ACTIVITY_POINTS = {}; // kept for compat, rebuilt dynamically
 function rebuildActivityPoints(){ PP_ACTIVITIES.forEach(a=>{ ACTIVITY_POINTS[a.id]=a.pts; }); }
 const PARC_POINTS = 4;
 
-function calcPoints(state) {
-  let pts = 0;
-  Object.entries(state.activities || {}).forEach(([id, count]) => {
-    pts += (ACTIVITY_POINTS[id] || 2) * count;
-  });
-  Object.values(state.parcs || {}).forEach(visited => { if(visited) pts += PARC_POINTS; });
-  return pts;
-}
-
-function calcTotalPts(state){
-  return calcPoints(state) + (state._journalPts||0);
-}
+function calcPoints(state){ return calcWeeklyPts(state); }
+function calcTotalPts(state){ return calcWeeklyPts(state); }
 
 function getLevel(pts) {
   return LEVELS.slice().reverse().find(l => pts >= l.min) || LEVELS[0];
@@ -1492,12 +1588,12 @@ async function saveJournal(){
   closeJournalModal();
   // Award 1 pt only on new entry (not edit)
   if(isNew){
-    const prevPts = calcTotalPts(ppState);
-    ppState._journalPts = (ppState._journalPts||0) + 1;
+    const wk=getWeekKey();
+    ppState.weeklyJournal=ppState.weeklyJournal||{};
+    ppState.weeklyJournal[wk]=true;
     await savePPState();
-    const newPts = calcTotalPts(ppState);
     renderAvatar(calcTotalPts(ppState));
-    showToast('+1 pt ✨ Entry saved!');
+    showToast('+1 pt this week ✨ Entry saved!');
   } else {
     showToast('Entry updated ✓');
   }
@@ -1584,28 +1680,48 @@ async function savePPState(){
 }
 
 async function togglePPActivity(id){
-  const prevPts=calcTotalPts(ppState);
+  const wk=getWeekKey();
+  ppState.activities=ppState.activities||{};
+  ppState.weeklyActivities=ppState.weeklyActivities||{};
+  ppState.weeklyActivities[wk]=ppState.weeklyActivities[wk]||{};
+  // All-time count (for display ×)
   ppState.activities[id]=(ppState.activities[id]||0)+1;
-  if(ppState.activities[id]>20)ppState.activities[id]=0;
+  if(ppState.activities[id]>99)ppState.activities[id]=0;
+  // Weekly tracking (1pt per activity this week)
+  const wasNew=!ppState.weeklyActivities[wk][id];
+  ppState.weeklyActivities[wk][id]=(ppState.weeklyActivities[wk][id]||0)+1;
+  const prevPts=calcTotalPts(ppState)-(wasNew?1:0);
   await savePPState();
   const newPts=calcTotalPts(ppState);
   const levelChanged=getLevel(newPts).min!==getLevel(prevPts).min;
   renderAvatar(newPts, levelChanged);
-  if(levelChanged)showToast('🎉 Level up! '+getLevel(newPts).title);
-  else showToast('+'+ACTIVITY_POINTS[id]+' pts ✨');
+  if(levelChanged)showToast('🎉 '+getLevel(newPts).title);
+  else if(wasNew)showToast('+1 pt this week ✨');
+  else showToast('Logged! (already counted this week)');
   renderPostpartum();
 }
 
 async function toggleParc(id){
-  const prevPts=calcTotalPts(ppState);
+  const wk=getWeekKey();
+  ppState.parcs=ppState.parcs||{};
+  ppState.weeklyActivities=ppState.weeklyActivities||{};
+  ppState.weeklyActivities[wk]=ppState.weeklyActivities[wk]||{};
   ppState.parcs[id]=!ppState.parcs[id];
-  await savePPState();
-  const newPts=calcTotalPts(ppState);
-  const levelChanged=getLevel(newPts).min!==getLevel(prevPts).min;
-  renderAvatar(newPts, levelChanged);
+  const parcActId='parc_'+id;
   if(ppState.parcs[id]){
-    if(levelChanged)showToast('🎉 Level up! '+getLevel(newPts).title);
-    else showToast('+'+PARC_POINTS+' pts ✨');
+    const wasNew=!ppState.weeklyActivities[wk][parcActId];
+    ppState.weeklyActivities[wk][parcActId]=1;
+    await savePPState();
+    const newPts=calcTotalPts(ppState);
+    const levelChanged=getLevel(newPts).min!==getLevel(newPts-(wasNew?1:0)).min;
+    renderAvatar(newPts,levelChanged);
+    if(levelChanged)showToast('🎉 '+getLevel(newPts).title);
+    else if(wasNew)showToast('+1 pt this week 🌳');
+    else showToast('Visited! ✓');
+  } else {
+    delete ppState.weeklyActivities[wk]?.[parcActId];
+    await savePPState();
+    renderAvatar(calcTotalPts(ppState));
   }
   renderPostpartum();
 }
