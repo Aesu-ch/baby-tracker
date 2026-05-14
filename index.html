@@ -117,6 +117,22 @@
   .page{display:none;}
   .page.active{display:block;}
 
+  /* SUMMARY */
+  .summary-card{background:white;border-radius:14px;padding:14px 16px;box-shadow:0 2px 10px var(--shadow);}
+  .summary-card-title{font-family:'DM Serif Display',serif;font-size:15px;margin-bottom:10px;color:var(--deep);}
+  .food-week-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .food-week-chip{background:var(--cream);border:1.5px solid var(--warm-sand);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--deep);}
+  .food-week-chip.allergen{border-color:var(--gold);}
+  .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:12px;}
+  .day-col{background:white;border-radius:10px;padding:8px 5px;box-shadow:0 2px 6px var(--shadow);min-height:120px;display:flex;flex-direction:column;}
+  .day-col.today-col{border:2px solid var(--terra);}
+  .day-col-header{font-size:10px;font-weight:700;color:var(--deep);text-align:center;text-transform:uppercase;letter-spacing:0.3px;}
+  .day-col-date{font-size:9px;color:#aaa;text-align:center;margin-bottom:5px;}
+  .day-flags{display:flex;justify-content:center;gap:2px;margin-bottom:4px;flex-wrap:wrap;}
+  .day-flag{font-size:11px;line-height:1;}
+  .day-food-item{font-size:9px;color:#666;line-height:1.5;text-align:center;}
+  .day-empty{font-size:9px;color:#ddd;text-align:center;margin-top:8px;}
+
   .analysis-card{background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 12px var(--shadow);}
   .analysis-title{font-family:'DM Serif Display',serif;font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
   .avg-row{display:flex;justify-content:space-around;text-align:center;}
@@ -423,48 +439,17 @@
 <!-- ANALYSIS PAGE -->
 <div class="page" id="pageAnalysis">
   <div class="section">
-    <div class="section-title">📊 Analysis <span style="font-size:13px;font-weight:400;font-family:'DM Sans',sans-serif;color:#aaa">last 7 days</span></div>
-
-    <div class="analysis-card">
-      <div class="analysis-title">🌙 Night sleep</div>
-      <div class="avg-row">
-        <div><div class="avg-val" id="avgNightSleep">–</div><div class="avg-label">avg hrs/night</div></div>
-        <div><div class="avg-val" id="countFullNight">–</div><div class="avg-label">full nights (7d)</div></div>
-        <div><div class="avg-val" id="countWakeups">–</div><div class="avg-label">nights w/ wakeup</div></div>
-      </div>
-      <div style="font-size:11px;color:#aaa;margin:8px 0 4px">sleep hrs per night</div>
-      <div class="bar-chart" id="nightBarChart"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="section-title" style="margin-bottom:0">📅 Weekly Summary</div>
+      <div style="font-size:12px;color:#aaa" id="weekLabel"></div>
     </div>
-
-    <div class="analysis-card">
-      <div class="analysis-title">💊 Medication</div>
-      <div class="avg-row">
-        <div><div class="avg-val" id="avgVitD">–</div><div class="avg-label">Vit D days (7d)</div></div>
-        <div><div class="avg-val" id="avgFlat">–</div><div class="avg-label">Flatulex days (7d)</div></div>
-      </div>
+    <!-- Food list for the week -->
+    <div class="summary-card" style="margin-bottom:12px">
+      <div class="summary-card-title">🥦 Foods this week</div>
+      <div id="weeklyFoodList"><div style="color:#bbb;font-size:13px">Loading…</div></div>
     </div>
-
-    <div class="analysis-card">
-      <div class="analysis-title">🍼 Feeding</div>
-      <div class="avg-row">
-        <div><div class="avg-val" id="avgMl">–</div><div class="avg-label">avg ml/day</div></div>
-        <div><div class="avg-val" id="avgFeeds">–</div><div class="avg-label">avg feeds/day</div></div>
-        <div><div class="avg-val" id="avgBetween">–</div><div class="avg-label">avg hrs between</div></div>
-      </div>
-      <div style="font-size:11px;color:#aaa;margin:8px 0 4px">ml per day</div>
-      <div class="bar-chart" id="mlBarChart"></div>
-    </div>
-
-
-    <div class="analysis-card">
-      <div class="analysis-title">🩲 Diapers</div>
-      <div class="avg-row">
-        <div><div class="avg-val" id="avgDiaperDay">–</div><div class="avg-label">avg/day (7d)</div></div>
-        <div><div class="avg-val" id="avgDiaperWeek">–</div><div class="avg-label">total (7d)</div></div>
-        <div><div class="avg-val" id="avgDiaperMonth">–</div><div class="avg-label">total (30d)</div></div>
-      </div>
-      <div class="bar-chart" id="diaperBarChart"></div>
-    </div>
+    <!-- 7-day grid -->
+    <div id="weeklyGrid"></div>
   </div>
 </div>
 
@@ -544,7 +529,7 @@
 <div class="bottom-nav">
   <button class="nav-item active" onclick="showPage('pageToday','navToday')" id="navToday"><div class="nav-icon">📋</div><div class="nav-label">Today</div></button>
   <button class="nav-item" onclick="showPage('pageFoodList','navFoodList')" id="navFoodList"><div class="nav-icon">🥕</div><div class="nav-label">Foods</div></button>
-  <button class="nav-item" onclick="showPage('pageAnalysis','navAnalysis')" id="navAnalysis"><div class="nav-icon">📊</div><div class="nav-label">Stats</div></button>
+  <button class="nav-item" onclick="showPage('pageAnalysis','navAnalysis')" id="navAnalysis"><div class="nav-icon">📅</div><div class="nav-label">Summary</div></button>
   <button class="nav-item" onclick="showPage('pageMedical','navMedical')" id="navMedical"><div class="nav-icon">📏</div><div class="nav-label">Growth</div></button>
   <button class="nav-item" onclick="showPage('pageSettings','navSettings')" id="navSettings"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></button>
 </div>
@@ -1285,65 +1270,121 @@ function closeFab(){}
 
 function getLast7Days(){const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);}return days;}
 
+// ── WEEKLY SUMMARY ────────────────────────────────────────────────────────────
+function getCurrentWeekDays(){
+  // Mon–Sun of current week
+  const today = new Date();
+  const day = today.getDay(); // 0=Sun
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+  monday.setHours(0,0,0,0);
+  const days = [];
+  for(let i = 0; i < 7; i++){
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+  }
+  return days;
+}
+
+function foodIdToName(id){
+  for(const cat of FOOD_CATEGORIES){
+    const item = cat.items.find(i => i.id === id);
+    if(item) return {name: item.name, allergen: item.allergen || cat.allergen_all};
+  }
+  return null;
+}
+
 async function renderAnalysis(){
-  const days=getLast7Days();
-  const results=await Promise.all(days.map(k=>Promise.all([
-    db.from('feeds').select('*').eq('date_key',k),
-    db.from('day_data').select('*').eq('date_key',k).single()
+  const days = getCurrentWeekDays();
+  const todayKey = todayKey_fn();
+
+  // Week label
+  const mon = new Date(days[0]+'T12:00:00');
+  const sun = new Date(days[6]+'T12:00:00');
+  const fmt = d => d.toLocaleDateString('fr-CH',{day:'numeric',month:'short'});
+  document.getElementById('weekLabel').textContent = `${fmt(mon)} – ${fmt(sun)}`;
+
+  // Fetch all data for the week
+  const results = await Promise.all(days.map(k => Promise.all([
+    db.from('feeds').select('*').eq('date_key', k),
+    db.from('day_data').select('*').eq('date_key', k).single()
   ])));
-  const all=results.map(([f,d],i)=>({key:days[i],feeds:f.data||[],day:d.data||{}}));
+  const all = results.map(([f,d],i) => ({
+    key: days[i],
+    feeds: f.data || [],
+    day: d.data || {},
+  }));
 
-  // ── FEEDING ──
-  const mlVals=all.map(d=>d.feeds.reduce((s,f)=>s+f.ml,0));
-  const fcounts=all.map(d=>d.feeds.length);
-  const avgMl=mlVals.filter(v=>v>0).length?Math.round(mlVals.filter(v=>v>0).reduce((s,v)=>s+v,0)/mlVals.filter(v=>v>0).length):0;
-  const avgFeeds=fcounts.filter(v=>v>0).length?(fcounts.filter(v=>v>0).reduce((s,v)=>s+v,0)/fcounts.filter(v=>v>0).length).toFixed(1):0;
-  let bh=[];
-  all.forEach(d=>{const fs=[...d.feeds].sort((a,b)=>a.time.localeCompare(b.time));for(let i=1;i<fs.length;i++){const[ah,am]=fs[i-1].time.split(':').map(Number),[bH,bm]=fs[i].time.split(':').map(Number),diff=(bH*60+bm)-(ah*60+am);if(diff>0)bh.push(diff/60);}});
-  const avgBetween=bh.length?(bh.reduce((s,v)=>s+v,0)/bh.length).toFixed(1):0;
-  document.getElementById('avgMl').textContent=avgMl||'–';
-  document.getElementById('avgFeeds').textContent=avgFeeds||'–';
-  document.getElementById('avgBetween').textContent=avgBetween?avgBetween+'h':'–';
-  renderBarChart('mlBarChart',mlVals,days,'#F2A97E');
-
-
-  // ── NIGHT SLEEP ──
-  // For each day, look up previous day's sleep time
-  const prevKeys=days.map(k=>getPrevKey(k));
-  const prevDayRes=await Promise.all(prevKeys.map(k=>db.from('day_data').select('sleep_time').eq('date_key',k).single()));
-  const nightMins=all.map((d,i)=>{
-    const prevSleep=prevDayRes[i].data?.sleep_time;
-    if(!prevSleep||!d.day.wake_time)return 0;
-    const[sh,sm]=prevSleep.split(':').map(Number),[wh,wm]=d.day.wake_time.split(':').map(Number);
-    return Math.max(0,(wh*60+wm+24*60)-(sh*60+sm));
+  // Collect all unique foods eaten this week
+  const weekFoods = new Map(); // id → {name, allergen}
+  all.forEach(d => {
+    d.feeds.forEach(f => {
+      (f.foods || []).forEach(id => {
+        if(!weekFoods.has(id)){
+          const info = foodIdToName(id);
+          if(info) weekFoods.set(id, info);
+        }
+      });
+    });
   });
-  const nightDaysWithData=nightMins.filter(v=>v>0);
-  const avgNightH=nightDaysWithData.length?Math.round(nightDaysWithData.reduce((s,v)=>s+v,0)/nightDaysWithData.length):0;
-  const fullNights=all.filter(d=>(d.day.night_wakeups||0)===0&&d.day.wake_time).length;
-  const wakeupNights=all.filter(d=>(d.day.night_wakeups||0)>0).length;
-  document.getElementById('avgNightSleep').textContent=avgNightH?fmtDur(avgNightH):'–';
-  document.getElementById('countFullNight').textContent=fullNights||'–';
-  document.getElementById('countWakeups').textContent=wakeupNights||'–';
-  renderBarChart('nightBarChart',nightMins.map(v=>v/60),days,'#A8C8E8');
 
-  // ── MEDICATION ──
-  document.getElementById('avgVitD').textContent=`${all.filter(d=>d.day.vit_d_given).length}/7`;
-  document.getElementById('avgFlat').textContent=`${all.filter(d=>d.day.flat_given).length}/7`;
+  // Food list
+  const foodListEl = document.getElementById('weeklyFoodList');
+  if(weekFoods.size === 0){
+    foodListEl.innerHTML = '<div style="color:#bbb;font-size:13px">No purée logged this week</div>';
+  } else {
+    foodListEl.innerHTML = `<div class="food-week-chips">${
+      [...weekFoods.values()].map(f =>
+        `<span class="food-week-chip ${f.allergen?'allergen':''}">${f.name}${f.allergen?' <span style="font-size:8px;font-weight:700;color:#8a6000">A</span>':''}</span>`
+      ).join('')
+    }</div>`;
+  }
 
-  // ── DIAPERS ──
-  const diaperVals=all.map(d=>d.day.diaper_count||0);
-  const totalDiapers7=diaperVals.reduce((s,v)=>s+v,0);
-  const avgDiaper=diaperVals.filter(v=>v>0).length?(totalDiapers7/diaperVals.filter(v=>v>0).length).toFixed(1):0;
-  document.getElementById('avgDiaperDay').textContent=avgDiaper||'–';
-  document.getElementById('avgDiaperWeek').textContent=totalDiapers7||'–';
-  renderBarChart('diaperBarChart',diaperVals,days,'#F5DEC8');
-  const days30=[];for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days30.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);}
-  const res30=await Promise.all(days30.map(k=>db.from('day_data').select('diaper_count').eq('date_key',k).single()));
-  document.getElementById('avgDiaperMonth').textContent=res30.reduce((s,r)=>s+(r.data?.diaper_count||0),0)||'–';
+  // 7-day grid
+  const DAY_LABELS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  const gridEl = document.getElementById('weeklyGrid');
+  gridEl.innerHTML = `<div class="week-grid">${
+    all.map((d, i) => {
+      const isToday = d.key === todayKey;
+      const dateNum = new Date(d.key+'T12:00:00').getDate();
+
+      // Flags
+      const flags = [];
+      if(d.day.vit_d_given) flags.push('<span title="Vit D">☀️</span>');
+      if(d.day.poop_today)  flags.push('<span title="Poop">💩</span>');
+      if(d.day.flat_given)  flags.push('<span title="Flatulex">💊</span>');
+
+      // Foods this day
+      const dayFoods = new Set();
+      d.feeds.forEach(f => (f.foods||[]).forEach(id => dayFoods.add(id)));
+      const foodNames = [...dayFoods].map(id => {
+        const info = foodIdToName(id);
+        return info ? info.name.split(' ')[0] : null;
+      }).filter(Boolean);
+
+      return `<div class="day-col ${isToday?'today-col':''}">
+        <div class="day-col-header">${DAY_LABELS[i]}</div>
+        <div class="day-col-date">${dateNum}</div>
+        <div class="day-flags">${flags.join('')||'<span style="color:#eee;font-size:11px">·</span>'}</div>
+        ${foodNames.length
+          ? foodNames.map(n => `<div class="day-food-item">${n}</div>`).join('')
+          : `<div class="day-empty">–</div>`
+        }
+      </div>`;
+    }).join('')
+  }</div>`;
+}
+
+function todayKey_fn(){
+  const d=new Date();
+  return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 function renderBarChart(elId,vals,days,color){
-  const el=document.getElementById(elId),max=Math.max(...vals,1);
+  const el=document.getElementById(elId);
+  if(!el) return;
+  const max=Math.max(...vals,1);
   el.innerHTML=vals.map((v,i)=>{const h=Math.max(4,Math.round((v/max)*70)),d=new Date(days[i]+'T12:00:00');return`<div class="bar-col"><div class="bar-fill" style="height:${h}px;background:${color}"></div><div class="bar-label">${d.toLocaleDateString('en-GB',{weekday:'narrow'})}</div></div>`;}).join('');
 }
 
