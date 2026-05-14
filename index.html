@@ -123,16 +123,16 @@
   .food-week-chips{display:flex;flex-wrap:wrap;gap:6px;}
   .food-week-chip{background:var(--cream);border:1.5px solid var(--warm-sand);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--deep);}
   .food-week-chip.allergen{border-color:var(--gold);}
-  .week-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
-  .day-col{background:white;border-radius:12px;padding:12px 14px;box-shadow:0 2px 6px var(--shadow);display:flex;align-items:flex-start;gap:12px;}
+  .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:12px;}
+  .day-col{background:white;border-radius:10px;padding:8px 4px;box-shadow:0 2px 6px var(--shadow);display:flex;flex-direction:column;align-items:center;gap:2px;min-height:90px;}
   .day-col.today-col{border:2px solid var(--terra);}
-  .day-col-left{flex-shrink:0;width:38px;text-align:center;}
-  .day-col-header{font-size:11px;font-weight:700;color:var(--deep);text-transform:uppercase;letter-spacing:0.3px;}
-  .day-col-date{font-size:12px;color:#aaa;}
-  .day-col-right{flex:1;}
-  .day-flags{display:flex;gap:4px;margin-bottom:4px;flex-wrap:wrap;}
-  .day-flag{font-size:14px;line-height:1;}
-  .day-food-item{font-size:12px;color:#666;line-height:1.6;}
+  .day-col-left{text-align:center;}
+  .day-col-header{font-size:10px;font-weight:700;color:var(--deep);text-transform:uppercase;letter-spacing:0.3px;}
+  .day-col-date{font-size:11px;color:#aaa;margin-bottom:3px;}
+  .day-col-right{display:flex;flex-direction:column;align-items:center;gap:1px;}
+  .day-flags{display:flex;flex-direction:column;align-items:center;gap:1px;}
+  .day-flag{font-size:13px;line-height:1.3;}
+  .day-food-item{font-size:9px;color:#666;line-height:1.4;text-align:center;}
   .summary-legend{display:flex;flex-wrap:wrap;gap:8px 14px;padding:10px 14px;background:var(--cream);border-radius:10px;font-size:11px;color:#888;margin-top:4px;}
 
   .analysis-card{background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 12px var(--shadow);}
@@ -1344,10 +1344,17 @@ async function renderAnalysis(){
     day: d.data || {},
   }));
 
-  // Collect all unique foods this week
-  const weekFoods = new Map();
+  // Collect foods with count
+  const weekFoods = new Map(); // id → {name, allergen, count}
   all.forEach(d => d.feeds.forEach(f => (f.foods||[]).forEach(id => {
-    if(!weekFoods.has(id)){ const info = foodIdToName(id); if(info) weekFoods.set(id, info); }
+    const info = foodIdToName(id);
+    if(info){
+      if(weekFoods.has(id)){
+        weekFoods.get(id).count++;
+      } else {
+        weekFoods.set(id, {...info, count: 1});
+      }
+    }
   })));
 
   // Food list
@@ -1357,7 +1364,7 @@ async function renderAnalysis(){
   } else {
     foodListEl.innerHTML = `<div class="food-week-chips">${
       [...weekFoods.values()].map(f =>
-        `<span class="food-week-chip ${f.allergen?'allergen':''}">${f.name}${f.allergen?' <span style="font-size:8px;font-weight:700;color:#8a6000">A</span>':''}</span>`
+        `<span class="food-week-chip ${f.allergen?'allergen':''}">${f.count > 1 ? `${f.count}× ` : ''}${f.name}${f.allergen?' <span style="font-size:8px;font-weight:700;color:#8a6000">A</span>':''}</span>`
       ).join('')
     }</div>`;
   }
@@ -1374,18 +1381,14 @@ async function renderAnalysis(){
       const noFlags = !d.day.vit_d_given && !d.day.poop_today && !d.day.flat_given && !wakeupStr;
 
       return `<div class="day-col ${isToday?'today-col':''}">
-        <div class="day-col-left">
-          <div class="day-col-header">${DAY_LABELS[i]}</div>
-          <div class="day-col-date">${dateNum}</div>
-        </div>
-        <div class="day-col-right">
-          <div class="day-flags">
-            ${d.day.vit_d_given ? '<span>💧</span>' : ''}
-            ${d.day.poop_today  ? '<span>💩</span>' : ''}
-            ${d.day.flat_given  ? '<span>💨</span>' : ''}
-            ${wakeupStr         ? `<span>${wakeupStr}</span>` : ''}
-            ${noFlags           ? '<span style="color:#ddd;font-size:12px">–</span>' : ''}
-          </div>
+        <div class="day-col-header">${DAY_LABELS[i]}</div>
+        <div class="day-col-date">${dateNum}</div>
+        <div class="day-flags">
+          ${d.day.vit_d_given ? '<span>💧</span>' : ''}
+          ${d.day.poop_today  ? '<span>💩</span>' : ''}
+          ${d.day.flat_given  ? '<span>💨</span>' : ''}
+          ${wakeupStr         ? `<span>${wakeupStr}</span>` : ''}
+          ${noFlags           ? '<span style="color:#ddd;font-size:11px">–</span>' : ''}
         </div>
       </div>`;
     }).join('')
