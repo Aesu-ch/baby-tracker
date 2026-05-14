@@ -123,9 +123,11 @@
   .food-week-chips{display:flex;flex-wrap:wrap;gap:6px;}
   .food-week-chip{background:var(--cream);border:1.5px solid var(--warm-sand);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--deep);}
   .food-week-chip.allergen{border-color:var(--gold);}
-  .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:12px;}
+  .week-grid{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+  .week-row{display:grid;gap:5px;}
+  .week-row-1{grid-template-columns:repeat(4,1fr);}
+  .week-row-2{grid-template-columns:repeat(3,1fr);}
   .day-col{background:white;border-radius:10px;padding:8px 4px;box-shadow:0 2px 6px var(--shadow);display:flex;flex-direction:column;align-items:center;gap:2px;min-height:90px;}
-  .day-col.today-col{border:2px solid var(--terra);}
   .day-col-left{text-align:center;}
   .day-col-header{font-size:10px;font-weight:700;color:var(--deep);text-transform:uppercase;letter-spacing:0.3px;}
   .day-col-date{font-size:11px;color:#aaa;margin-bottom:3px;}
@@ -1372,14 +1374,12 @@ async function renderAnalysis(){
   // 7-day grid (vertical)
   const DAY_LABELS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
   const gridEl = document.getElementById('weeklyGrid');
-  gridEl.innerHTML = `<div class="week-grid">${
-    all.map((d, i) => {
+  const dayCards = all.map((d, i) => {
       const isToday = d.key === todayKey;
       const dateNum = new Date(d.key+'T12:00:00').getDate();
       const wakeups = d.day.night_wakeups;
       const wakeupStr = wakeups === 0 ? '😴' : wakeups != null ? `🌙×${wakeups}` : null;
       const noFlags = !d.day.vit_d_given && !d.day.poop_today && !d.day.flat_given && !wakeupStr;
-
       return `<div class="day-col ${isToday?'today-col':''}">
         <div class="day-col-header">${DAY_LABELS[i]}</div>
         <div class="day-col-date">${dateNum}</div>
@@ -1391,8 +1391,11 @@ async function renderAnalysis(){
           ${noFlags           ? '<span style="color:#ddd;font-size:11px">–</span>' : ''}
         </div>
       </div>`;
-    }).join('')
-  }</div>
+  });
+  gridEl.innerHTML = `<div class="week-grid">
+    <div class="week-row week-row-1">${dayCards.slice(0,4).join('')}</div>
+    <div class="week-row week-row-2">${dayCards.slice(4,7).join('')}</div>
+  </div>
   <div class="summary-legend">
     <span>💧 Vit D</span>
     <span>💩 Poop</span>
