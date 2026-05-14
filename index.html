@@ -53,6 +53,30 @@
   .night-sleep-info{text-align:center;font-size:12px;color:var(--sage);font-weight:500;}
 
   .feed-list{display:flex;flex-direction:column;gap:10px;}
+  /* FOOD SELECTOR */
+  .food-categories{display:flex;flex-direction:column;gap:10px;}
+  .food-cat-header{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+  .food-cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .food-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .food-chip{background:var(--cream);border:1.5px solid var(--warm-sand);border-radius:20px;padding:4px 10px;font-size:12px;cursor:pointer;transition:all 0.15s;color:var(--deep);display:flex;align-items:center;gap:3px;}
+  .food-chip.selected{background:var(--terra);border-color:var(--terra);color:white;}
+  .food-chip.allergen::after{content:'A';font-size:8px;font-weight:700;background:var(--gold);color:#5a4200;border-radius:6px;padding:1px 4px;margin-left:2px;}
+  .food-chip.selected.allergen::after{background:rgba(255,255,255,0.3);color:white;}
+
+  /* MEAL CARDS */
+  .meal-card{background:white;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 12px var(--shadow);display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.2s;border:2px solid transparent;}
+  .meal-card.logged{border-color:var(--sage);background:linear-gradient(135deg,#f6fbf6,white);}
+  .meal-card.active{border-color:var(--terra);}
+  .meal-icon{font-size:26px;flex-shrink:0;}
+  .meal-info{flex:1;}
+  .meal-name{font-size:15px;font-weight:600;color:var(--deep);}
+  .meal-detail{font-size:12px;color:#aaa;margin-top:3px;}
+  .meal-detail.has-data{color:var(--sage);font-weight:500;}
+  .meal-status{font-size:18px;flex-shrink:0;}
+  .meal-type-row{display:flex;gap:8px;}
+  .meal-type-btn{flex:1;background:var(--cream);border:2px solid var(--warm-sand);border-radius:10px;padding:9px 4px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--deep);transition:all 0.15s;text-align:center;}
+  .meal-type-btn.active{background:var(--terra);border-color:var(--terra);color:white;}
+
   .feed-card{background:white;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 12px var(--shadow);transition:transform 0.15s;}
   .feed-time-pill{background:var(--soft-peach);color:var(--terra);border-radius:10px;padding:6px 10px;font-family:'DM Serif Display',serif;font-size:17px;min-width:62px;text-align:center;flex-shrink:0;}
   .feed-info{flex:1;}
@@ -325,8 +349,6 @@
   <div class="stat-divider"></div>
   <div class="stat-cell"><div class="stat-val" id="sumFeeds">–</div><div class="stat-label">feeds</div></div>
   <div class="stat-divider"></div>
-  <div class="stat-cell"><div class="stat-val" id="sumNapH">–</div><div class="stat-label">nap hrs</div></div>
-  <div class="stat-divider"></div>
   <div class="stat-cell"><div class="stat-val" id="sumSleepH">–</div><div class="stat-label">sleep hrs</div></div>
 </div>
 
@@ -338,16 +360,6 @@
       <div class="since-icon">🍼</div>
     </div>
     <div class="meds-bar">
-      <div class="med-pill" id="vitDPill" onclick="toggleMed('vitD')">
-        <div class="med-icon">☀️</div>
-        <div><div class="med-name">Vitamin D</div><div class="med-status" id="vitDStatus">Not given</div></div>
-        <div class="med-check" id="vitDCheck">○</div>
-      </div>
-      <div class="med-pill" id="flatPill" onclick="toggleMed('flat')">
-        <div class="med-icon">💨</div>
-        <div><div class="med-name">Flatulex</div><div class="med-status" id="flatStatus">Not given</div></div>
-        <div class="med-check" id="flatCheck">○</div>
-      </div>
       <div class="med-pill" id="poopPill" onclick="toggleMed('poop')">
         <div class="med-icon">💩</div>
         <div><div class="med-name">Poop</div><div class="med-status" id="poopStatus">Not yet</div></div>
@@ -394,12 +406,8 @@
     </div>
   </div>
   <div class="section" style="padding-top:12px">
-    <div class="section-title">🍼 Feeds</div>
-    <div class="feed-list" id="feedList"><div class="empty"><div class="empty-icon">🍼</div><div class="empty-text">No feeds logged yet</div></div></div>
-  </div>
-  <div class="section" style="padding-top:0">
-    <div class="section-title">😴 Naps</div>
-    <div class="feed-list" id="napList"><div class="empty"><div class="empty-icon">😴</div><div class="empty-text">No naps logged yet</div></div></div>
+    <div class="section-title">🍽️ Feeds</div>
+    <div id="feedList"></div>
   </div>
 </div>
 
@@ -438,16 +446,6 @@
       <div class="bar-chart" id="mlBarChart"></div>
     </div>
 
-    <div class="analysis-card">
-      <div class="analysis-title">☀️ Naps</div>
-      <div class="avg-row">
-        <div><div class="avg-val" id="avgNapCount">–</div><div class="avg-label">avg naps/day</div></div>
-        <div><div class="avg-val" id="avgNapTotal">–</div><div class="avg-label">avg total/day</div></div>
-        <div><div class="avg-val" id="avgNapDur">–</div><div class="avg-label">avg nap length</div></div>
-      </div>
-      <div style="font-size:11px;color:#aaa;margin:8px 0 4px">total nap time per day</div>
-      <div class="bar-chart" id="napBarChart"></div>
-    </div>
 
     <div class="analysis-card">
       <div class="analysis-title">🩲 Diapers</div>
@@ -461,52 +459,10 @@
   </div>
 </div>
 
-<!-- MEMORIES PAGE -->
-<div class="page" id="pageMemories">
-  <div class="section" style="padding-bottom:8px">
-    <div class="section-title">📸 Memories</div>
-  </div>
-  <div class="upload-area" onclick="document.getElementById('photoInput').click()">
-    <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="uploadPhoto(event)">
-    <div class="upload-icon">📷</div>
-    <div class="upload-text">Add a photo for today</div>
-    <div class="upload-sub" id="uploadDateSub">–</div>
-  </div>
-  <div class="memories-grid" id="memoriesGrid">
-    <div style="grid-column:1/-1;text-align:center;padding:30px;color:#bbb;font-size:14px">No memories yet 📸</div>
-  </div>
-</div>
-<!-- MEDICAL PAGE (includes Growth) -->
+<!-- GROWTH PAGE -->
 <div class="page" id="pageMedical">
   <div class="section">
-    <div class="section-title">💉 Vaccinations</div>
-    <div class="medical-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <span style="font-size:13px;color:#aaa">Tap to mark done · swipe to edit</span>
-        <button onclick="openVaccineModal()" style="background:var(--terra);color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Add</button>
-      </div>
-      <div id="vaccineList"><div style="color:#bbb;font-size:13px;text-align:center;padding:16px">No vaccines added yet</div></div>
-    </div>
-
-    <div class="section-title" style="margin-top:8px">👩‍⚕️ Midwife Visits</div>
-    <div class="medical-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <span style="font-size:13px;color:#aaa">Track your home visits</span>
-        <button onclick="openVisitModal('midwife')" style="background:var(--sage);color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Add</button>
-      </div>
-      <div id="midwifeList"><div style="color:#bbb;font-size:13px;text-align:center;padding:16px">No visits recorded yet</div></div>
-    </div>
-
-    <div class="section-title" style="margin-top:8px">🩺 Pediatric Visits</div>
-    <div class="medical-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <span style="font-size:13px;color:#aaa">Doctor check-ups</span>
-        <button onclick="openVisitModal('pediatric')" style="background:var(--terra);color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">+ Add</button>
-      </div>
-      <div id="pediatricList"><div style="color:#bbb;font-size:13px;text-align:center;padding:16px">No visits recorded yet</div></div>
-    </div>
-
-    <div class="section-title" style="margin-top:8px">📏 Growth Tracking</div>
+    <div class="section-title">📏 Growth Tracking</div>
     <div class="growth-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <span style="font-family:'DM Serif Display',serif;font-size:16px">Add measurement</span>
@@ -520,49 +476,16 @@
     </div>
     <div class="growth-card"><div class="analysis-title">⚖️ Weight curve</div><div id="weightChart" style="background:var(--cream);border-radius:12px;padding:12px;height:140px;overflow:hidden"></div></div>
     <div class="growth-card"><div class="analysis-title">📏 Height curve</div><div id="heightChart" style="background:var(--cream);border-radius:12px;padding:12px;height:140px;overflow:hidden"></div></div>
-    <div class="growth-card"><div class="analysis-title">📋 Growth History</div><div id="growthHistory"></div></div>
+    <div class="growth-card"><div class="analysis-title">📋 Measurement history</div><div id="growthHistory"></div></div>
   </div>
 </div>
 
-<!-- POSTPARTUM PAGE -->
-<div class="page" id="pagePostpartum">
-  <!-- AVATAR CARD -->
-  <div class="avatar-card" id="avatarCard">
-    <div class="avatar-left">
-      <div class="avatar-emoji" id="avatarEmoji">😴</div>
-      <div class="avatar-level-badge" id="avatarBadge">Lvl 1</div>
-    </div>
-    <div class="avatar-right">
-      <div class="avatar-title" id="avatarTitle">Rookie Maman</div>
-      <div class="avatar-pts"><span id="avatarPts">0</span> pts</div>
-      <div class="avatar-bar-wrap">
-        <div class="avatar-bar-fill" id="avatarBarFill" style="width:0%"></div>
-      </div>
-      <div class="avatar-next" id="avatarNext">10 pts to next level</div>
-    </div>
-  </div>
-
-  <div class="section" style="padding-bottom:0;padding-top:12px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div class="section-title" style="margin-bottom:0">🌸 Self-care Activities</div>
-      <button onclick="openActivitiesEditor()" style="background:var(--cream);border:1.5px solid var(--warm-sand);color:var(--terra);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">✏️ Edit</button>
-    </div>
-    <div class="pp-activities" id="ppActivities"></div>
-
-    <!-- JOURNAL -->
-    <div class="section-title" style="margin-top:16px">💭 How are you doing today?</div>
-    <div class="journal-card" id="journalCard">
-      <!-- filled by JS -->
-    </div>
-    <div class="journal-history-toggle" onclick="toggleJournalHistory()">
-      <span id="journalHistoryLabel">📖 See past entries</span>
-      <span id="journalHistoryArrow">›</span>
-    </div>
-    <div id="journalHistory" style="display:none"></div>
-
-    <div class="section-title" style="margin-top:16px">🌳 Parcs à visiter</div>
-    <div style="font-size:12px;color:#aaa;margin-bottom:10px">Geneva parks — tap to mark as visited</div>
-    <div id="ppParcList"></div>
+<!-- FOOD LIST PAGE -->
+<div class="page" id="pageFoodList">
+  <div class="section">
+    <div class="section-title">🥕 Food List</div>
+    <div style="font-size:12px;color:#aaa;margin-bottom:14px">Foods your baby has already tried are marked ✅. Based on all logged meals.</div>
+    <div id="foodListContent"></div>
   </div>
 </div>
 
@@ -587,63 +510,75 @@
   </div>
 </div>
 
-<div class="add-bar" id="addBar">
-  <button class="add-bar-btn" onclick="openNapModal()">😴 Add Nap</button>
-  <button class="add-bar-btn primary" onclick="openFeedModal()">🍼 Log Feed</button>
-</div>
+<div class="add-bar" id="addBar" style="display:none"></div>
 
 <div class="bottom-nav">
   <button class="nav-item active" onclick="showPage('pageToday','navToday')" id="navToday"><div class="nav-icon">📋</div><div class="nav-label">Today</div></button>
+  <button class="nav-item" onclick="showPage('pageFoodList','navFoodList')" id="navFoodList"><div class="nav-icon">🥕</div><div class="nav-label">Foods</div></button>
   <button class="nav-item" onclick="showPage('pageAnalysis','navAnalysis')" id="navAnalysis"><div class="nav-icon">📊</div><div class="nav-label">Stats</div></button>
-  <button class="nav-item" onclick="showPage('pageMemories','navMemories')" id="navMemories"><div class="nav-icon">📸</div><div class="nav-label">Memories</div></button>
-  <button class="nav-item" onclick="showPage('pagePostpartum','navPostpartum')" id="navPostpartum"><div class="nav-icon">🌸</div><div class="nav-label">Maman</div></button>
-  <button class="nav-item" onclick="showPage('pageMedical','navMedical')" id="navMedical"><div class="nav-icon">💉</div><div class="nav-label">Medical</div></button>
+  <button class="nav-item" onclick="showPage('pageMedical','navMedical')" id="navMedical"><div class="nav-icon">📏</div><div class="nav-label">Growth</div></button>
   <button class="nav-item" onclick="showPage('pageSettings','navSettings')" id="navSettings"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></button>
 </div>
 
 <!-- MODALS -->
+<!-- MEAL MODAL -->
 <div class="modal-overlay" id="feedModal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-header"><div class="modal-title" id="feedModalTitle">Log Feed 🍼</div><button class="modal-close" onclick="closeFeedModal()">✕</button></div>
-    <div class="modal-body">
-      <div class="form-group"><label class="form-label">Time</label><input class="form-input" type="time" id="feedTimeInput"></div>
-      <div class="form-group">
-        <label class="form-label">Amount (ml)</label>
-        <div class="ml-row">
-          <button class="ml-btn" onclick="changeMl(-10)">−</button>
-          <div class="ml-display"><span id="mlDisplay">120</span><span class="ml-unit"> ml</span></div>
-          <button class="ml-btn" onclick="changeMl(10)">+</button>
-        </div>
-        <div class="ml-presets">
-          <button class="ml-preset" onclick="setMl(60)">60</button>
-          <button class="ml-preset" onclick="setMl(90)">90</button>
-          <button class="ml-preset active" onclick="setMl(120)">120</button>
-          <button class="ml-preset" onclick="setMl(150)">150</button>
-          <button class="ml-preset" onclick="setMl(180)">180</button>
-          <button class="ml-preset" onclick="setMl(210)">210</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Supplements</label>
-        <div class="toggle-group">
-          <div class="toggle-row"><div class="toggle-info"><div class="toggle-emoji">☀️</div><div><div class="toggle-name">Vitamin D</div><div class="toggle-desc">400 IU drop</div></div></div><label class="switch"><input type="checkbox" id="vitDToggle"><span class="switch-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-info"><div class="toggle-emoji">💨</div><div><div class="toggle-name">Flatulex</div><div class="toggle-desc">Gas relief drops</div></div></div><label class="switch"><input type="checkbox" id="flatToggle"><span class="switch-slider"></span></label></div>
-        </div>
-      </div>
-      <button class="save-btn" id="feedSaveBtn" onclick="saveFeed()">Save Feed</button>
+    <div class="modal-header">
+      <div class="modal-title" id="feedModalTitle">🌙 Night Feed</div>
+      <button class="modal-close" onclick="closeFeedModal()">✕</button>
     </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="napModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-header"><div class="modal-title" id="napModalTitle">Log Nap 😴</div><button class="modal-close" onclick="closeNapModal()">✕</button></div>
     <div class="modal-body">
-      <div class="form-group"><label class="form-label">Start time</label><input class="form-input" type="time" id="napStartInput"></div>
-      <div class="form-group"><label class="form-label">End time</label><input class="form-input" type="time" id="napEndInput"></div>
-      <button class="save-btn" id="napSaveBtn" onclick="saveNap()">Save Nap</button>
+      <div class="form-group">
+        <label class="form-label">Time</label>
+        <input class="form-input" type="time" id="feedTimeInput">
+      </div>
+
+      <!-- What was given -->
+      <div class="form-group">
+        <label class="form-label">What was given</label>
+        <div class="meal-type-row">
+          <button class="meal-type-btn" id="mtBottle" onclick="toggleMealType('bottle')">🍼 Bottle</button>
+          <button class="meal-type-btn" id="mtPuree" onclick="toggleMealType('puree')">🥣 Purée</button>
+          <button class="meal-type-btn" id="mtBoth" onclick="toggleMealType('both')">🍼+🥣 Both</button>
+        </div>
+      </div>
+
+      <!-- Bottle section -->
+      <div id="bottleSection">
+        <div class="form-group">
+          <label class="form-label">Milk (ml)</label>
+          <input class="form-input" type="number" id="mlInput" placeholder="e.g. 150" min="0" max="500" style="font-size:18px;text-align:center">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Supplements</label>
+          <div class="toggle-group">
+            <div class="toggle-row">
+              <div class="toggle-info"><div class="toggle-emoji">☀️</div><div><div class="toggle-name">Vitamin D</div><div class="toggle-desc">400 IU drop</div></div></div>
+              <label class="switch"><input type="checkbox" id="vitDToggle"><span class="switch-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info"><div class="toggle-emoji">💨</div><div><div class="toggle-name">Flatulex</div><div class="toggle-desc">Gas relief drops</div></div></div>
+              <label class="switch"><input type="checkbox" id="flatToggle"><span class="switch-slider"></span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Purée section -->
+      <div id="pureeSection" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Purée amount (g)</label>
+          <input class="form-input" type="number" id="pureeInput" placeholder="e.g. 120" min="0" max="400" style="font-size:18px;text-align:center">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ingredients in the purée</label>
+          <div class="food-categories" id="foodCategories"></div>
+        </div>
+      </div>
+
+      <button class="save-btn" id="feedSaveBtn" onclick="saveFeed()">Save</button>
     </div>
   </div>
 </div>
@@ -667,7 +602,6 @@
       <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" id="growthDateInput"></div>
       <div class="form-group"><label class="form-label">Weight (kg)</label><input class="form-input" type="number" id="growthWeightInput" step="0.01" placeholder="e.g. 4.25"></div>
       <div class="form-group"><label class="form-label">Height (cm)</label><input class="form-input" type="number" id="growthHeightInput" step="0.1" placeholder="e.g. 55.0"></div>
-      <div class="form-group"><label class="form-label">Head circumference (cm)</label><input class="form-input" type="number" id="growthHCInput" step="0.1" placeholder="optional"></div>
       <button class="save-btn" onclick="saveGrowth()">Save Measurement</button>
     </div>
   </div>
@@ -797,12 +731,11 @@ async function loadSettings(){
   if(data){appSettings=data;updateHeaderName();}
 }
 async function loadDayData(){
-  const[fr,nr,dr]=await Promise.all([
+  const[fr,dr]=await Promise.all([
     db.from('feeds').select('*').eq('date_key',currentDateKey).order('time'),
-    db.from('naps').select('*').eq('date_key',currentDateKey).order('start_time'),
     db.from('day_data').select('*').eq('date_key',currentDateKey).single()
   ]);
-  dayFeeds=fr.data||[];dayNaps=nr.data||[];dayData=dr.data||{wake_time:null,sleep_time:null,vit_d_given:false,flat_given:false};
+  dayFeeds=fr.data||[];dayData=dr.data||{wake_time:null,sleep_time:null,vit_d_given:false,flat_given:false};
 }
 async function loadPrevSleep(){
   const pk=getPrevKey(currentDateKey);
@@ -817,12 +750,6 @@ function setupRealtime(){
       if((p.new?.date_key||p.old?.date_key)===currentDateKey){
         const{data}=await db.from('feeds').select('*').eq('date_key',currentDateKey).order('time');
         dayFeeds=data||[];renderDay();showToast('🔄 Synced');
-      }
-    })
-    .on('postgres_changes',{event:'*',schema:'public',table:'naps'},async(p)=>{
-      if((p.new?.date_key||p.old?.date_key)===currentDateKey){
-        const{data}=await db.from('naps').select('*').eq('date_key',currentDateKey).order('start_time');
-        dayNaps=data||[];renderDay();
       }
     })
     .on('postgres_changes',{event:'*',schema:'public',table:'day_data'},async(p)=>{
@@ -851,9 +778,8 @@ function showPage(pageId,navId){
   document.getElementById('addBar').classList.toggle('visible',isToday);
   document.body.style.paddingBottom=isToday?'130px':'80px';
   if(pageId==='pageAnalysis')renderAnalysis();
-  if(pageId==='pageMedical'){renderMedical();renderGrowth();}
-  if(pageId==='pageMemories')renderMemories();
-  if(pageId==='pagePostpartum')renderPostpartum();
+  if(pageId==='pageMedical')renderGrowth();
+  if(pageId==='pageFoodList')renderFoodListPage();
   if(pageId==='pageSettings'){loadSettingsForm();renderHistory();}
 }
 
@@ -874,11 +800,10 @@ function formatDateLabel(k){
 
 function renderDay(){
   document.getElementById('dateLabelEl').textContent=formatDateLabel(currentDateKey);
-  const totalMl=dayFeeds.reduce((s,f)=>s+f.ml,0);
+  const totalMl=dayFeeds.reduce((s,f)=>s+(f.ml||0),0);
+  const loggedFeeds=dayFeeds.filter(f=>f.meal_id).length;
   document.getElementById('sumMl').textContent=totalMl||'–';
-  document.getElementById('sumFeeds').textContent=dayFeeds.length||'–';
-  const totalNapMin=dayNaps.reduce((s,n)=>s+napDur(n),0);
-  document.getElementById('sumNapH').textContent=totalNapMin?(totalNapMin/60).toFixed(1):'–';
+  document.getElementById('sumFeeds').textContent=loggedFeeds||'–';
   // Night sleep
   let nightMin=0;
   if(prevSleepTime&&dayData.wake_time){
@@ -889,16 +814,10 @@ function renderDay(){
   document.getElementById('nightSleepInfo').textContent=nightMin?fmtDur(nightMin)+' night sleep':'–';
   renderSinceFeed();
   // Meds
-  document.getElementById('vitDPill').className='med-pill'+(dayData.vit_d_given?' given':'');
-  document.getElementById('flatPill').className='med-pill'+(dayData.flat_given?' given':'');
   document.getElementById('poopPill').className='med-pill'+(dayData.poop_today?' given':'');
   document.getElementById('bathPill').className='med-pill'+(dayData.bath_today?' given':'');
-  document.getElementById('vitDStatus').textContent=dayData.vit_d_given?'✓ Given today':'Not given today';
-  document.getElementById('flatStatus').textContent=dayData.flat_given?'✓ Given today':'Not given today';
   document.getElementById('poopStatus').textContent=dayData.poop_today?'✓ Yes today':'Not yet';
   document.getElementById('bathStatus').textContent=dayData.bath_today?'✓ Done today':'Not yet';
-  document.getElementById('vitDCheck').textContent=dayData.vit_d_given?'✅':'○';
-  document.getElementById('flatCheck').textContent=dayData.flat_given?'✅':'○';
   document.getElementById('poopCheck').textContent=dayData.poop_today?'✅':'○';
   document.getElementById('bathCheck').textContent=dayData.bath_today?'✅':'○';
   document.getElementById('wakeTimeDisplay').textContent=dayData.wake_time||'–';
@@ -908,7 +827,7 @@ function renderDay(){
   const dc=dayData.diaper_count||0;
   document.getElementById('diaperCount').textContent=dc;
   document.getElementById('diaperSub').textContent=dc===0?'tap to count':dc===1?'1 change today':`${dc} changes today`;
-  renderFeedList();renderNapList();
+  renderFeedList();
 }
 
 function renderSinceFeed(){
@@ -936,80 +855,230 @@ function renderSinceFeed(){
   document.getElementById('headerNextFeed').textContent='–';
 }
 
-function renderFeedList(){
-  const el=document.getElementById('feedList');
-  if(!dayFeeds.length){el.innerHTML='<div class="empty"><div class="empty-icon">🍼</div><div class="empty-text">No feeds logged yet</div></div>';return;}
-  el.innerHTML=[...dayFeeds].sort((a,b)=>a.time.localeCompare(b.time)).map(f=>`
-    <div class="feed-card">
-      <div class="feed-time-pill">${f.time}</div>
-      <div class="feed-info"><div class="feed-ml">${f.ml} ml</div>
-      <div class="feed-tags">${f.vit_d?'<span class="tag tag-vitD">☀️ Vit D</span>':''}${f.flat?'<span class="tag tag-flat">💨 Flatulex</span>':''}</div></div>
-      <div class="feed-actions"><button class="icon-btn" onclick="editFeed('${f.id}')">✏️</button><button class="icon-btn delete" onclick="deleteFeed('${f.id}')">🗑</button></div>
-    </div>`).join('');
+// ── FOOD DATA ─────────────────────────────────────────────────────────────────
+const FOOD_CATEGORIES = [
+  {
+    id: 'legumes', label: 'Légumes', color: '#8BAF8B', emoji: '🥦',
+    items: [
+      {id:'carotte',name:'Carotte'},{id:'courgette',name:'Courgette (sans pépins)'},
+      {id:'haricot',name:'Haricot vert'},{id:'potimarron',name:'Potimarron / courge'},
+      {id:'patate_douce',name:'Patate douce'},{id:'pomme_terre',name:'Pomme de terre'},
+      {id:'brocoli',name:'Brocoli'},{id:'chou_fleur',name:'Chou-fleur'},
+      {id:'epinards',name:'Épinards'},{id:'blanc_poireau',name:'Blanc de poireau'},
+      {id:'panais',name:'Panais'},{id:'petits_pois',name:'Petits pois'},
+      {id:'fenouil',name:'Fenouil'},{id:'aubergine',name:'Aubergine'},
+      {id:'tomate',name:'Tomate (pelée, épépinée)'},{id:'betterave',name:'Betterave cuite'},
+      {id:'celeri',name:'Céleri'},
+    ]
+  },
+  {
+    id: 'fruits', label: 'Fruits', color: '#F2A97E', emoji: '🍎',
+    items: [
+      {id:'pomme_cuite',name:'Pomme (cuite)'},{id:'poire_cuite',name:'Poire (cuite)'},
+      {id:'banane_cuite',name:'Banane (cuite)'},{id:'peche',name:'Pêche'},
+      {id:'abricot',name:'Abricot'},{id:'prune',name:'Prune'},
+      {id:'mangue',name:'Mangue'},{id:'coing',name:'Coing'},
+      {id:'melon',name:'Melon'},{id:'pasteque',name:'Pastèque'},
+      {id:'myrtille',name:'Myrtille'},{id:'fraise',name:'Fraise'},
+      {id:'framboise',name:'Framboise'},{id:'kiwi',name:'Kiwi'},
+      {id:'agrumes',name:'Agrumes (orange, clémentine)',allergen:true},
+      {id:'ananas',name:'Ananas (très mûr)'},{id:'litchi',name:'Litchi / fruits exotiques'},
+    ]
+  },
+  {
+    id: 'proteines', label: 'Protéines', color: '#D4784A', emoji: '🍗',
+    items: [
+      {id:'poulet',name:'Poulet'},{id:'dinde',name:'Dinde'},
+      {id:'boeuf',name:'Bœuf maigre'},{id:'veau',name:'Veau'},
+      {id:'jambon',name:'Jambon blanc (sans sel)'},{id:'saumon',name:'Saumon'},
+      {id:'sardine',name:'Sardine'},{id:'cabillaud',name:'Cabillaud'},
+      {id:'oeuf_jaune',name:'Œuf — jaune cuit dur',allergen:true},
+      {id:'oeuf_blanc',name:'Œuf — blanc bien cuit',allergen:true},
+      {id:'lentilles',name:'Lentilles corail'},{id:'pois_chiches',name:'Pois chiches mixés'},
+      {id:'tofu',name:'Tofu nature',allergen:true},
+      {id:'crevette',name:'Crevette (mixée)',allergen:true},
+    ]
+  },
+  {
+    id: 'fruits_coque', label: 'Fruits à coque', color: '#C5B8E8', emoji: '🥜',
+    allergen_all: true,
+    items: [
+      {id:'amande',name:'Purée d\'amande',allergen:true},{id:'cacahuete',name:'Purée de cacahuète',allergen:true},
+      {id:'noisette',name:'Purée de noisette',allergen:true},{id:'cajou',name:'Purée de noix de cajou',allergen:true},
+      {id:'noix',name:'Purée de noix',allergen:true},{id:'pistache',name:'Purée de pistache',allergen:true},
+      {id:'tahini',name:'Tahini (sésame)',allergen:true},{id:'pecan',name:'Purée de noix de pécan',allergen:true},
+      {id:'bresil',name:'Purée de noix du Brésil',allergen:true},
+      {id:'lin',name:'Graines de lin moulues'},{id:'tournesol',name:'Graines de tournesol moulues'},
+    ]
+  },
+  {
+    id: 'laitiers', label: 'Produits laitiers', color: '#A8C8E8', emoji: '🥛',
+    items: [
+      {id:'yaourt',name:'Yaourt nature',allergen:true},
+      {id:'petit_suisse',name:'Petit-suisse nature',allergen:true},
+      {id:'fromage',name:'Fromage (émmental, comté…)',allergen:true},
+    ]
+  },
+];
+
+let selectedFoods = new Set();
+
+function renderFoodSelector(existing = [], catFilter = null){
+  selectedFoods = new Set(existing);
+  const el = document.getElementById('foodCategories');
+  if(!el) return;
+  const cats = catFilter ? FOOD_CATEGORIES.filter(c => catFilter.includes(c.id)) : FOOD_CATEGORIES;
+  el.innerHTML = cats.map(cat => `
+    <div>
+      <div class="food-cat-header">
+        <span class="food-cat-dot" style="background:${cat.color}"></span>
+        ${cat.emoji} ${cat.label}
+        ${cat.allergen_all ? '<span style="font-size:9px;background:var(--gold);color:#5a4200;border-radius:6px;padding:1px 5px;font-weight:700">Tous allergènes</span>' : ''}
+      </div>
+      <div class="food-chips">
+        ${cat.items.map(item => `
+          <button class="food-chip ${item.allergen?'allergen':''} ${selectedFoods.has(item.id)?'selected':''}"
+            onclick="toggleFood('${item.id}')">${item.name}</button>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
 }
 
-function renderNapList(){
-  const el=document.getElementById('napList');
-  if(!dayNaps.length){el.innerHTML='<div class="empty"><div class="empty-icon">😴</div><div class="empty-text">No naps logged yet</div></div>';return;}
-  el.innerHTML=[...dayNaps].sort((a,b)=>a.start_time.localeCompare(b.start_time)).map(n=>{
-    const dur=napDur(n);return`<div class="nap-card"><div class="nap-icon">😴</div><div class="nap-info"><div class="nap-duration">${fmtDur(dur)}</div><div class="nap-time-range">${n.start_time} → ${n.end_time}</div></div><div class="feed-actions"><button class="icon-btn" onclick="editNap('${n.id}')">✏️</button><button class="icon-btn delete" onclick="deleteNap('${n.id}')">🗑</button></div></div>`;
+function toggleFood(id){
+  if(selectedFoods.has(id)) selectedFoods.delete(id);
+  else selectedFoods.add(id);
+  // Re-render just chips without full re-render
+  document.querySelectorAll('.food-chip').forEach(btn => {
+    const btnId = btn.getAttribute('onclick').match(/'([^']+)'/)?.[1];
+    if(btnId) btn.classList.toggle('selected', selectedFoods.has(btnId));
+  });
+}
+
+// ── MEALS ─────────────────────────────────────────────────────────────────────
+const MEALS = [
+  {id:'night',  icon:'🌙', name:'Night Feed',    defaultTime:'06:00'},
+  {id:'morning',icon:'🌅', name:'Morning Feed',  defaultTime:'08:00'},
+  {id:'lunch',  icon:'☀️', name:'Lunch Feed',    defaultTime:'12:00'},
+  {id:'snack',  icon:'🍎', name:'Snack Feed',    defaultTime:'15:30'},
+  {id:'evening',icon:'🌆', name:'Evening Feed',  defaultTime:'18:00'},
+];
+
+let currentMealType = 'bottle';
+let currentPureeGrams = 100;
+
+function renderFeedList(){
+  const el = document.getElementById('feedList');
+  if(!el) return;
+  el.innerHTML = MEALS.map(meal => {
+    const feed = dayFeeds.find(f => f.meal_id === meal.id);
+    let detail = 'Tap to log';
+    let logged = false;
+    if(feed){
+      logged = true;
+      const parts = [];
+      if(feed.ml) parts.push('🍼 '+feed.ml+'ml');
+      if(feed.puree_g) parts.push('🥣 '+feed.puree_g+'g');
+      if(feed.foods?.length) {
+        const names = feed.foods.slice(0,3).map(id => {
+          for(const cat of FOOD_CATEGORIES){ const item = cat.items.find(i=>i.id===id); if(item) return item.name.split(' ')[0]; }
+          return id;
+        });
+        parts.push(names.join(', ')+(feed.foods.length>3?' +'+( feed.foods.length-3):''));
+      }
+      if(feed.vit_d) parts.push('☀️');
+      if(feed.flat) parts.push('💨');
+      detail = (feed.time ? feed.time+' · ' : '') + parts.join(' · ');
+    }
+    return `<div class="meal-card ${logged?'logged':''}" onclick="openFeedModal('${meal.id}')"><div class="meal-icon">${meal.icon}</div><div class="meal-info"><div class="meal-name">${meal.name}</div><div class="meal-detail ${logged?'has-data':''}">${detail}</div></div><div class="meal-status">${logged?'✅':'+'}</div></div>`;
   }).join('');
 }
 
-async function upsertDayData(patch){
-  setSyncing(true);
-  const u={date_key:currentDateKey,...dayData,...patch,updated_at:new Date().toISOString()};
-  delete u.id;
-  const{data}=await db.from('day_data').upsert(u,{onConflict:'date_key'}).select().single();
-  if(data)dayData=data;
-  setSyncing(false);
+function openFeedModal(mealId){
+  editingFeedId = mealId;
+  const meal = MEALS.find(m => m.id === mealId);
+  const existing = dayFeeds.find(f => f.meal_id === mealId);
+  document.getElementById('feedModalTitle').textContent = `${meal.icon} ${meal.name}`;
+  document.getElementById('feedTimeInput').value = existing?.time || meal.defaultTime;
+
+  // Per-meal rules
+  const isPureeOnly = mealId === 'snack';
+  const hasPuree    = mealId === 'lunch' || mealId === 'snack';
+
+  // Show/hide meal type buttons
+  document.getElementById('mtBottle').style.display = isPureeOnly ? 'none' : 'flex';
+  document.getElementById('mtPuree').style.display  = hasPuree    ? 'flex' : 'none';
+  document.getElementById('mtBoth').style.display   = (hasPuree && !isPureeOnly) ? 'flex' : 'none';
+
+  // Default meal type
+  const defaultType = isPureeOnly ? 'puree' : (existing?.meal_type || 'bottle');
+  toggleMealType(defaultType);
+
+  // Bottle
+  document.getElementById('mlInput').value = existing?.ml || '';
+  document.getElementById('vitDToggle').checked = existing?.vit_d || false;
+  document.getElementById('flatToggle').checked = existing?.flat || false;
+
+  // Puree — food categories filter per meal
+  document.getElementById('pureeInput').value = existing?.puree_g || '';
+  // lunch: all except fruits à coque; snack: fruits + fruits à coque only
+  const catFilter = mealId === 'lunch'  ? ['legumes','proteines','laitiers']
+                  : mealId === 'snack'  ? ['fruits','fruits_coque']
+                  : null;
+  renderFoodSelector(existing?.foods || [], catFilter);
+
+  document.getElementById('feedModal').classList.add('open');
+}
+function closeFeedModal(){ document.getElementById('feedModal').classList.remove('open'); editingFeedId = null; }
+
+function toggleMealType(type){
+  currentMealType = type;
+  ['bottle','puree','both'].forEach(t => document.getElementById('mt'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('active', t===type || (type==='both'&&(t==='bottle'||t==='puree'))));
+  document.getElementById('mtBoth').classList.toggle('active', type==='both');
+  document.getElementById('bottleSection').style.display = (type==='bottle'||type==='both') ? 'block' : 'none';
+  document.getElementById('pureeSection').style.display  = (type==='puree' ||type==='both') ? 'block' : 'none';
 }
 
-function openFeedModal(id=null){
-  editingFeedId=id;
-  document.getElementById('feedModal').classList.add('open');
-  if(id){
-    const f=dayFeeds.find(x=>x.id===id);
-    document.getElementById('feedModalTitle').textContent='Edit Feed 🍼';
-    document.getElementById('feedTimeInput').value=f.time;
-    setMl(f.ml);
-    document.getElementById('vitDToggle').checked=f.vit_d;
-    document.getElementById('flatToggle').checked=f.flat;
-  }else{
-    document.getElementById('feedModalTitle').textContent='Log Feed 🍼';
-    const now=new Date();
-    document.getElementById('feedTimeInput').value=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    setMl(120);document.getElementById('vitDToggle').checked=false;document.getElementById('flatToggle').checked=false;
-  }
-}
-function closeFeedModal(){document.getElementById('feedModal').classList.remove('open');editingFeedId=null;}
 
 async function saveFeed(){
-  const time=document.getElementById('feedTimeInput').value;
-  if(!time){showToast('Please set a time');return;}
-  const btn=document.getElementById('feedSaveBtn');btn.disabled=true;btn.textContent='Saving…';
-  setSyncing(true);
-  const vitD=document.getElementById('vitDToggle').checked,flat=document.getElementById('flatToggle').checked;
-  if(editingFeedId){
-    await db.from('feeds').update({time,ml:currentMl,vit_d:vitD,flat}).eq('id',editingFeedId);
-  }else{
-    await db.from('feeds').insert({id:Date.now().toString(),date_key:currentDateKey,time,ml:currentMl,vit_d:vitD,flat});
-    const patch={};if(vitD)patch.vit_d_given=true;if(flat)patch.flat_given=true;
-    if(Object.keys(patch).length)await upsertDayData(patch);
+  const time = document.getElementById('feedTimeInput').value;
+  const mealId = editingFeedId;
+  if(!time){ showToast('Please set a time'); return; }
+  const existing = dayFeeds.find(f => f.meal_id === mealId);
+  const hasBottle = currentMealType==='bottle'||currentMealType==='both';
+  const hasPuree  = currentMealType==='puree' ||currentMealType==='both';
+  const mlVal = parseInt(document.getElementById('mlInput').value) || null;
+  const pureeVal = parseInt(document.getElementById('pureeInput').value) || null;
+  const payload = {
+    meal_id: mealId, date_key: currentDateKey, time,
+    meal_type: currentMealType,
+    ml:      hasBottle ? mlVal : null,
+    vit_d:   hasBottle ? document.getElementById('vitDToggle').checked : false,
+    flat:    hasBottle ? document.getElementById('flatToggle').checked : false,
+    puree_g: hasPuree  ? pureeVal : null,
+    foods:   hasPuree  ? Array.from(selectedFoods) : [],
+  };
+  if(existing){
+    await db.from('feeds').update(payload).eq('id', existing.id);
+  } else {
+    await db.from('feeds').insert({id: Date.now().toString(), ...payload});
   }
-  const{data}=await db.from('feeds').select('*').eq('date_key',currentDateKey).order('time');
-  dayFeeds=data||[];setSyncing(false);btn.disabled=false;btn.textContent='Save Feed';
-  closeFeedModal();renderDay();showToast('Feed saved ✓');
+  const patch = {};
+  if(payload.vit_d) patch.vit_d_given = true;
+  if(payload.flat)  patch.flat_given  = true;
+  if(Object.keys(patch).length) await upsertDayData(patch);
+  const {data} = await db.from('feeds').select('*').eq('date_key', currentDateKey).order('time');
+  dayFeeds = data || [];
+  setSyncing(false); btn.disabled = false; btn.textContent = 'Save';
+  closeFeedModal(); renderDay(); showToast('Saved ✓');
 }
-function editFeed(id){openFeedModal(id);}
-async function deleteFeed(id){
-  setSyncing(true);await db.from('feeds').delete().eq('id',id);
-  const{data}=await db.from('feeds').select('*').eq('date_key',currentDateKey).order('time');
-  dayFeeds=data||[];setSyncing(false);renderDay();showToast('Deleted');
-}
-function changeMl(d){setMl(Math.max(10,currentMl+d));}
-function setMl(v){currentMl=v;document.getElementById('mlDisplay').textContent=v;document.querySelectorAll('.ml-preset').forEach(b=>b.classList.toggle('active',parseInt(b.textContent)===v));}
 
+function editFeed(id){ openFeedModal(id); }
+async function deleteFeed(id){
+  setSyncing(true); await db.from('feeds').delete().eq('id', id);
+  const {data} = await db.from('feeds').select('*').eq('date_key', currentDateKey).order('time');
+  dayFeeds = data || []; setSyncing(false); renderDay(); showToast('Deleted');
+}
 let editingNapId=null;
 function openNapModal(id=null){
   editingNapId=id;
@@ -1083,10 +1152,9 @@ async function renderAnalysis(){
   const days=getLast7Days();
   const results=await Promise.all(days.map(k=>Promise.all([
     db.from('feeds').select('*').eq('date_key',k),
-    db.from('naps').select('*').eq('date_key',k),
     db.from('day_data').select('*').eq('date_key',k).single()
   ])));
-  const all=results.map(([f,n,d],i)=>({key:days[i],feeds:f.data||[],naps:n.data||[],day:d.data||{}}));
+  const all=results.map(([f,d],i)=>({key:days[i],feeds:f.data||[],day:d.data||{}}));
 
   // ── FEEDING ──
   const mlVals=all.map(d=>d.feeds.reduce((s,f)=>s+f.ml,0));
@@ -1101,17 +1169,6 @@ async function renderAnalysis(){
   document.getElementById('avgBetween').textContent=avgBetween?avgBetween+'h':'–';
   renderBarChart('mlBarChart',mlVals,days,'#F2A97E');
 
-  // ── NAPS ──
-  const napCountVals=all.map(d=>d.naps.length);
-  const napTotalMins=all.map(d=>d.naps.reduce((s,n)=>s+napDur(n),0));
-  const allIndivNaps=all.flatMap(d=>d.naps).map(n=>napDur(n)).filter(v=>v>0);
-  const avgNapCount=napCountVals.filter(v=>v>0).length?(napCountVals.filter(v=>v>0).reduce((s,v)=>s+v,0)/napCountVals.filter(v=>v>0).length).toFixed(1):0;
-  const avgNapTotal=napTotalMins.filter(v=>v>0).length?Math.round(napTotalMins.filter(v=>v>0).reduce((s,v)=>s+v,0)/napTotalMins.filter(v=>v>0).length):0;
-  const avgSingleNap=allIndivNaps.length?Math.round(allIndivNaps.reduce((s,v)=>s+v,0)/allIndivNaps.length):0;
-  document.getElementById('avgNapCount').textContent=avgNapCount||'–';
-  document.getElementById('avgNapTotal').textContent=avgNapTotal?fmtDur(avgNapTotal):'–';
-  document.getElementById('avgNapDur').textContent=avgSingleNap?fmtDur(avgSingleNap):'–';
-  renderBarChart('napBarChart',napTotalMins.map(v=>v/60),days,'#C5B8E8');
 
   // ── NIGHT SLEEP ──
   // For each day, look up previous day's sleep time
@@ -1185,7 +1242,7 @@ function renderSVGChart(elId,measurements,field,color){
 function openGrowthModal(){const t=new Date();document.getElementById('growthDateInput').value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;document.getElementById('growthWeightInput').value='';document.getElementById('growthHeightInput').value='';document.getElementById('growthHCInput').value='';document.getElementById('growthModal').classList.add('open');}
 function closeGrowthModal(){document.getElementById('growthModal').classList.remove('open');}
 async function saveGrowth(){
-  const m={id:Date.now().toString(),date_key:document.getElementById('growthDateInput').value,weight:document.getElementById('growthWeightInput').value||null,height:document.getElementById('growthHeightInput').value||null,head_circumference:document.getElementById('growthHCInput').value||null};
+  const m={id:Date.now().toString(),date_key:document.getElementById('growthDateInput').value,weight:document.getElementById('growthWeightInput').value||null,height:document.getElementById('growthHeightInput').value||null};
   if(!m.date_key){showToast('Set a date');return;}
   setSyncing(true);await db.from('growth').insert(m);await loadGrowth();setSyncing(false);closeGrowthModal();renderGrowth();showToast('Measurement saved ✓');
 }
@@ -1195,13 +1252,13 @@ async function renderHistory(){
   const el=document.getElementById('historyList');
   el.innerHTML='<div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading…</div></div>';
   const days=[];for(let i=0;i<30;i++){const d=new Date();d.setDate(d.getDate()-i);days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);}
-  const results=await Promise.all(days.map(k=>Promise.all([db.from('feeds').select('*').eq('date_key',k).order('time'),db.from('naps').select('*').eq('date_key',k).order('start_time'),db.from('day_data').select('*').eq('date_key',k).single()])));
-  const items=results.map(([f,n,d],i)=>({key:days[i],feeds:f.data||[],naps:n.data||[],day:d.data||{}})).filter(x=>x.feeds.length||x.naps.length||x.day.wake_time);
+  const results=await Promise.all(days.map(k=>Promise.all([db.from('feeds').select('*').eq('date_key',k).order('time'),db.from('day_data').select('*').eq('date_key',k).single()])));
+  const items=results.map(([f,d],i)=>({key:days[i],feeds:f.data||[],day:d.data||{}})).filter(x=>x.feeds.length||x.day.wake_time);
   if(!items.length){el.innerHTML='<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No history yet</div></div>';return;}
   el.innerHTML=items.map(item=>{
-    const totalMl=item.feeds.reduce((s,f)=>s+f.ml,0),totalNap=item.naps.reduce((s,n)=>s+napDur(n),0);
+    const totalMl=item.feeds.reduce((s,f)=>s+f.ml,0);
     const d=new Date(item.key+'T12:00:00');
-    return`<div class="history-day"><div class="history-day-header" onclick="toggleHistoryDay('${item.key}')"><div class="history-day-title">${d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</div><div class="history-day-sum">${item.feeds.length} feeds · ${totalMl}ml${totalNap?' · '+fmtDur(totalNap)+' nap':''}</div></div><div class="history-day-body" id="hist_${item.key}">${item.day.wake_time?`<div class="history-row"><span class="history-type">🌅</span><span class="history-detail">Wake: ${item.day.wake_time}</span></div>`:''}${item.feeds.map(f=>`<div class="history-row"><span class="history-type">🍼</span><span class="history-detail">${f.ml}ml${f.vit_d?' ☀️':''}${f.flat?' 💨':''}</span><span class="history-time">${f.time}</span></div>`).join('')}${item.naps.map(n=>`<div class="history-row"><span class="history-type">😴</span><span class="history-detail">Nap ${fmtDur(napDur(n))}</span><span class="history-time">${n.start_time}–${n.end_time}</span></div>`).join('')}${item.day.sleep_time?`<div class="history-row"><span class="history-type">🌙</span><span class="history-detail">Bed: ${item.day.sleep_time}</span></div>`:''}</div></div>`;
+    return`<div class="history-day"><div class="history-day-header" onclick="toggleHistoryDay('${item.key}')"><div class="history-day-title">${d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</div><div class="history-day-sum">${item.feeds.length} feeds · ${totalMl}ml</div></div><div class="history-day-body" id="hist_${item.key}">${item.day.wake_time?`<div class="history-row"><span class="history-type">🌅</span><span class="history-detail">Wake: ${item.day.wake_time}</span></div>`:''}${item.feeds.map(f=>`<div class="history-row"><span class="history-type">🍼</span><span class="history-detail">${f.ml}ml${f.vit_d?' ☀️':''}${f.flat?' 💨':''}</span><span class="history-time">${f.time}</span></div>`).join('')}${item.day.sleep_time?`<div class="history-row"><span class="history-type">🌙</span><span class="history-detail">Bed: ${item.day.sleep_time}</span></div>`:''}</div></div>`;
   }).join('');
 }
 function toggleHistoryDay(k){document.getElementById('hist_'+k)?.classList.toggle('open');}
@@ -1873,6 +1930,58 @@ async function saveVisit(){
 async function deleteVisit(id){
   if(!confirm('Delete this visit?'))return;
   setSyncing(true);await db.from('visits').delete().eq('id',id);setSyncing(false);renderMedical();
+}
+
+// ── FOOD LIST PAGE ────────────────────────────────────────────────────────────
+async function renderFoodListPage(){
+  const el = document.getElementById('foodListContent');
+  el.innerHTML = '<div style="color:#bbb;font-size:13px;text-align:center;padding:20px">Loading…</div>';
+
+  // Fetch ALL feeds ever logged to build set of tried foods
+  const { data: allFeeds } = await db.from('feeds').select('foods').not('foods','is',null);
+  const triedFoods = new Set();
+  (allFeeds || []).forEach(f => {
+    if(Array.isArray(f.foods)) f.foods.forEach(id => triedFoods.add(id));
+  });
+
+  const triedCount = triedFoods.size;
+  const totalCount = FOOD_CATEGORIES.reduce((s, c) => s + c.items.length, 0);
+
+  el.innerHTML = `
+    <div style="background:white;border-radius:14px;padding:14px 16px;margin-bottom:16px;box-shadow:0 2px 10px var(--shadow);display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--terra)">${triedCount}<span style="font-size:14px;color:#aaa"> / ${totalCount}</span></div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px">foods tried</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:28px">${triedCount === totalCount ? '🏆' : triedCount > totalCount*0.7 ? '🌟' : triedCount > totalCount*0.4 ? '😊' : '🌱'}</div>
+        <div style="font-size:11px;color:var(--sage);font-weight:600">${Math.round(triedCount/totalCount*100)}% explored</div>
+      </div>
+    </div>
+    ${FOOD_CATEGORIES.map(cat => {
+      const triedInCat = cat.items.filter(i => triedFoods.has(i.id)).length;
+      return `
+      <div style="background:white;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 10px var(--shadow)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:10px;height:10px;border-radius:50%;background:${cat.color};display:inline-block;flex-shrink:0"></span>
+            <span style="font-family:'DM Serif Display',serif;font-size:15px">${cat.emoji} ${cat.label}</span>
+          </div>
+          <span style="font-size:12px;color:var(--terra);font-weight:600">${triedInCat}/${cat.items.length}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0">
+          ${cat.items.map(item => {
+            const tried = triedFoods.has(item.id);
+            return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--cream);">
+              <div style="width:22px;height:22px;border-radius:6px;border:2px solid ${tried?cat.color:' var(--warm-sand)'};background:${tried?cat.color:'transparent'};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;color:white">${tried?'✓':''}</div>
+              <span style="font-size:13px;color:${tried?'var(--deep)':'#aaa'};font-weight:${tried?'500':'400'}">${item.name}</span>
+              ${item.allergen?'<span style="font-size:9px;background:var(--gold);color:#5a4200;border-radius:6px;padding:1px 5px;font-weight:700;margin-left:auto;flex-shrink:0">A</span>':''}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }).join('')}
+  `;
 }
 
 init().then(()=>{
