@@ -516,7 +516,7 @@
 </div>
 
 <div class="add-bar" id="addBar">
-  <button class="add-bar-btn primary" onclick="openExtraFeedModal('extra_'+Date.now())">🍼 + Extra bottle</button>
+  <button class="add-bar-btn primary" onclick="openExtraFeedModal()">🍼 + Biberon</button>
 </div>
 
 <div class="bottom-nav">
@@ -1010,7 +1010,7 @@ function renderFeedList(){
   el.innerHTML = allEntries.map(entry => {
     if(entry.type === 'scheduled'){
       const {meal, feed} = entry;
-      let detail = 'Tap to log', logged = false;
+      let detail = 'Tap to log', tags = '', logged = false;
       if(feed){
         logged = true;
         const parts = [];
@@ -1023,26 +1023,29 @@ function renderFeedList(){
           });
           parts.push(names.join(', ')+(feed.foods.length>3?' +'+(feed.foods.length-3):''));
         }
-        if(feed.vit_d) parts.push('☀️');
-        if(feed.flat) parts.push('💨');
         detail = (feed.time ? feed.time+' · ' : '') + parts.join(' · ');
+        const tagParts = [];
+        if(feed.vit_d) tagParts.push('<span class="tag tag-vitD">Vit D</span>');
+        if(feed.flat)  tagParts.push('<span class="tag tag-flat">Flatulex</span>');
+        tags = tagParts.length ? `<div class="feed-tags" style="margin-top:4px">${tagParts.join('')}</div>` : '';
       }
       return `<div class="meal-card ${logged?'logged':''}" onclick="openFeedModal('${meal.id}')">
         <div class="meal-icon">${meal.icon}</div>
-        <div class="meal-info"><div class="meal-name">${meal.name}</div><div class="meal-detail ${logged?'has-data':''}">${detail}</div></div>
+        <div class="meal-info"><div class="meal-name">${meal.name}</div><div class="meal-detail ${logged?'has-data':''}">${detail}</div>${tags}</div>
         <div class="meal-status">${logged?'✅':'+'}</div>
       </div>`;
     } else {
-      // Extra bottle — same style as scheduled
       const {feed} = entry;
       const parts = [];
       if(feed.ml) parts.push('🍼 '+feed.ml+'ml');
-      if(feed.vit_d) parts.push('☀️');
-      if(feed.flat) parts.push('💨');
       const detail = (feed.time ? feed.time+' · ' : '') + (parts.join(' · ')||'–');
+      const tagParts = [];
+      if(feed.vit_d) tagParts.push('<span class="tag tag-vitD">Vit D</span>');
+      if(feed.flat)  tagParts.push('<span class="tag tag-flat">Flatulex</span>');
+      const tags = tagParts.length ? `<div class="feed-tags" style="margin-top:4px">${tagParts.join('')}</div>` : '';
       return `<div class="meal-card logged" onclick="openFeedModal('${feed.meal_id}','${feed.id}')">
         <div class="meal-icon">🍼</div>
-        <div class="meal-info"><div class="meal-name">Extra bottle</div><div class="meal-detail has-data">${detail}</div></div>
+        <div class="meal-info"><div class="meal-name">Biberon</div><div class="meal-detail has-data">${detail}</div>${tags}</div>
         <div class="feed-actions"><button class="icon-btn delete" onclick="event.stopPropagation();deleteExtraFeed('${feed.id}')">🗑</button></div>
       </div>`;
     }
@@ -1080,7 +1083,7 @@ function openFeedModal(mealId, feedId=null, isExtra=false){
   if(isExtraFeed){
     const afterMealId = mealId.replace('extra_after_','').replace('extra_before_','');
     const meal = MEALS.find(m => m.id === afterMealId);
-    document.getElementById('feedModalTitle').textContent = `🍼 Extra bottle`;
+    document.getElementById('feedModalTitle').textContent = `🍼 Biberon`;
   } else {
     const meal = MEALS.find(m => m.id === mealId);
     document.getElementById('feedModalTitle').textContent = `${meal.icon} ${meal.name}`;
