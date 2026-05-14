@@ -53,7 +53,7 @@
   .night-sleep-info{text-align:center;font-size:12px;color:var(--sage);font-weight:500;}
 
   .feed-list{display:flex;flex-direction:column;gap:10px;}
-  .extra-feed-btn{display:flex;align-items:center;justify-content:center;margin:2px 0;cursor:pointer;}
+  .extra-feed-btn{display:flex;align-items:center;justify-content:center;margin:6px 0;}
   .extra-feed-btn-inner{width:26px;height:26px;border-radius:50%;border:2px dashed var(--warm-sand);background:white;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--terra);font-weight:700;transition:all 0.15s;line-height:1;}
   .extra-feed-btn:hover .extra-feed-btn-inner{border-color:var(--terra);background:var(--soft-peach);}
   .extra-card{border-style:dashed !important;border-color:var(--sage) !important;background:var(--sage-light) !important;}
@@ -515,7 +515,9 @@
   </div>
 </div>
 
-<div class="add-bar" id="addBar" style="display:none"></div>
+<div class="add-bar" id="addBar">
+  <button class="add-bar-btn primary" onclick="openExtraFeedModal('extra_'+Date.now())">🍼 + Extra bottle</button>
+</div>
 
 <div class="bottom-nav">
   <button class="nav-item active" onclick="showPage('pageToday','navToday')" id="navToday"><div class="nav-icon">📋</div><div class="nav-label">Today</div></button>
@@ -976,71 +978,82 @@ function renderFeedList(){
   const el = document.getElementById('feedList');
   if(!el) return;
 
-  // Extra feeds: all feeds with meal_id starting with 'extra_'
-  const extraFeeds = dayFeeds.filter(f => f.meal_id?.startsWith('extra_'));
+  // Build a unified list of all entries: scheduled meals + extra bottles
+  // For scheduled meals without a logged feed, show them as "not yet logged"
+  // Sort everything chronologically by time (logged items) or defaultTime (unlogged scheduled)
 
-  // Build ordered list: for each position (before meal[0], between meals, after meal[4])
-  // extras are keyed as extra_before_night, extra_after_night, etc.
-  let html = '';
+  const allEntries = [];
 
-  MEALS.forEach((meal, idx) => {
-    // Extra feeds BEFORE this meal
-    const beforeExtras = extraFeeds.filter(f => f.meal_id === `extra_before_${meal.id}`);
-    beforeExtras.forEach(f => { html += extraFeedCard(f); });
-
-    // The main meal card
+  // Scheduled meals
+  MEALS.forEach(meal => {
     const feed = dayFeeds.find(f => f.meal_id === meal.id);
-    let detail = 'Tap to log', logged = false;
-    if(feed){
-      logged = true;
-      const parts = [];
-      if(feed.ml) parts.push('🍼 '+feed.ml+'ml');
-      if(feed.puree_g) parts.push('🥣 '+feed.puree_g+'g');
-      if(feed.foods?.length){
-        const names = feed.foods.slice(0,3).map(id => {
-          for(const cat of FOOD_CATEGORIES){ const item = cat.items.find(i=>i.id===id); if(item) return item.name.split(' ')[0]; }
-          return id;
-        });
-        parts.push(names.join(', ')+(feed.foods.length>3?' +'+(feed.foods.length-3):''));
-      }
-      if(feed.vit_d) parts.push('☀️');
-      if(feed.flat) parts.push('💨');
-      detail = (feed.time ? feed.time+' · ' : '') + parts.join(' · ');
-    }
-    html += `<div class="meal-card ${logged?'logged':''}" onclick="openFeedModal('${meal.id}')"><div class="meal-icon">${meal.icon}</div><div class="meal-info"><div class="meal-name">${meal.name}</div><div class="meal-detail ${logged?'has-data':''}">${detail}</div></div><div class="meal-status">${logged?'✅':'+'}</div></div>`;
-
-    // "+" button after this meal
-    html += `<div class="extra-feed-btn" onclick="openExtraFeedModal('extra_after_${meal.id}')"><div class="extra-feed-btn-inner">+</div></div>`;
-
-    // Extra feeds AFTER this meal
-    const afterExtras = extraFeeds.filter(f => f.meal_id === `extra_after_${meal.id}`);
-    afterExtras.forEach(f => { html += extraFeedCard(f); });
+    allEntries.push({
+      type: 'scheduled',
+      meal,
+      feed,
+      sortTime: feed?.time || meal.defaultTime,
+    });
   });
 
-  el.innerHTML = html;
+  // Extra bottle feeds
+  dayFeeds.filter(f => f.meal_id?.startsWith('extra_')).forEach(feed => {
+    allEntries.push({
+      type: 'extra',
+      feed,
+      sortTime: feed.time || '23:59',
+    });
+  });
+
+  // Sort chronologically
+  allEntries.sort((a, b) => a.sortTime.localeCompare(b.sortTime));
+
+  el.innerHTML = allEntries.map(entry => {
+    if(entry.type === 'scheduled'){
+      const {meal, feed} = entry;
+      let detail = 'Tap to log', logged = false;
+      if(feed){
+        logged = true;
+        const parts = [];
+        if(feed.ml) parts.push('🍼 '+feed.ml+'ml');
+        if(feed.puree_g) parts.push('🥣 '+feed.puree_g+'g');
+        if(feed.foods?.length){
+          const names = feed.foods.slice(0,3).map(id => {
+            for(const cat of FOOD_CATEGORIES){ const item = cat.items.find(i=>i.id===id); if(item) return item.name.split(' ')[0]; }
+            return id;
+          });
+          parts.push(names.join(', ')+(feed.foods.length>3?' +'+(feed.foods.length-3):''));
+        }
+        if(feed.vit_d) parts.push('☀️');
+        if(feed.flat) parts.push('💨');
+        detail = (feed.time ? feed.time+' · ' : '') + parts.join(' · ');
+      }
+      return `<div class="meal-card ${logged?'logged':''}" onclick="openFeedModal('${meal.id}')">
+        <div class="meal-icon">${meal.icon}</div>
+        <div class="meal-info"><div class="meal-name">${meal.name}</div><div class="meal-detail ${logged?'has-data':''}">${detail}</div></div>
+        <div class="meal-status">${logged?'✅':'+'}</div>
+      </div>`;
+    } else {
+      // Extra bottle — same style as scheduled
+      const {feed} = entry;
+      const parts = [];
+      if(feed.ml) parts.push('🍼 '+feed.ml+'ml');
+      if(feed.vit_d) parts.push('☀️');
+      if(feed.flat) parts.push('💨');
+      const detail = (feed.time ? feed.time+' · ' : '') + (parts.join(' · ')||'–');
+      return `<div class="meal-card logged" onclick="openFeedModal('${feed.meal_id}','${feed.id}')">
+        <div class="meal-icon">🍼</div>
+        <div class="meal-info"><div class="meal-name">Extra bottle</div><div class="meal-detail has-data">${detail}</div></div>
+        <div class="feed-actions"><button class="icon-btn delete" onclick="event.stopPropagation();deleteExtraFeed('${feed.id}')">🗑</button></div>
+      </div>`;
+    }
+  }).join('');
 }
 
-function extraFeedCard(feed){
-  const detail = [
-    feed.ml ? '🍼 '+feed.ml+'ml' : '',
-    feed.vit_d ? '☀️' : '',
-    feed.flat  ? '💨' : '',
-  ].filter(Boolean).join(' · ');
-  return `<div class="meal-card extra-card logged" onclick="openFeedModal('${feed.meal_id}','${feed.id}')">
-    <div class="meal-icon">🍼</div>
-    <div class="meal-info">
-      <div class="meal-name" style="font-size:13px;color:#888">Extra bottle</div>
-      <div class="meal-detail has-data">${feed.time ? feed.time+' · ' : ''}${detail||'–'}</div>
-    </div>
-    <div class="feed-actions">
-      <button class="icon-btn delete" onclick="event.stopPropagation();deleteExtraFeed('${feed.id}')">🗑</button>
-    </div>
-  </div>`;
-}
+// extraFeedCard no longer needed — kept for compat but unused
+function extraFeedCard(feed){ return ''; }
 
-function openExtraFeedModal(slotId){
-  // slotId = 'extra_after_night' etc.
-  openFeedModal(slotId, null, true);
+function openExtraFeedModal(){
+  openFeedModal('extra_'+Date.now(), null, true);
 }
 
 async function deleteExtraFeed(feedId){
