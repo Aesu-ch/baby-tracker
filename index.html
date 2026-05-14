@@ -53,6 +53,11 @@
   .night-sleep-info{text-align:center;font-size:12px;color:var(--sage);font-weight:500;}
 
   .feed-list{display:flex;flex-direction:column;gap:10px;}
+  .extra-feed-btn{display:flex;align-items:center;justify-content:center;margin:2px 0;cursor:pointer;}
+  .extra-feed-btn-inner{width:26px;height:26px;border-radius:50%;border:2px dashed var(--warm-sand);background:white;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--terra);font-weight:700;transition:all 0.15s;line-height:1;}
+  .extra-feed-btn:hover .extra-feed-btn-inner{border-color:var(--terra);background:var(--soft-peach);}
+  .extra-card{border-style:dashed !important;border-color:var(--sage) !important;background:var(--sage-light) !important;}
+
   /* FOOD SELECTOR */
   .food-categories{display:flex;flex-direction:column;gap:10px;}
   .food-cat-header{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
@@ -970,60 +975,129 @@ let currentPureeGrams = 100;
 function renderFeedList(){
   const el = document.getElementById('feedList');
   if(!el) return;
-  el.innerHTML = MEALS.map(meal => {
+
+  // Extra feeds: all feeds with meal_id starting with 'extra_'
+  const extraFeeds = dayFeeds.filter(f => f.meal_id?.startsWith('extra_'));
+
+  // Build ordered list: for each position (before meal[0], between meals, after meal[4])
+  // extras are keyed as extra_before_night, extra_after_night, etc.
+  let html = '';
+
+  MEALS.forEach((meal, idx) => {
+    // Extra feeds BEFORE this meal
+    const beforeExtras = extraFeeds.filter(f => f.meal_id === `extra_before_${meal.id}`);
+    beforeExtras.forEach(f => { html += extraFeedCard(f); });
+
+    // The main meal card
     const feed = dayFeeds.find(f => f.meal_id === meal.id);
-    let detail = 'Tap to log';
-    let logged = false;
+    let detail = 'Tap to log', logged = false;
     if(feed){
       logged = true;
       const parts = [];
       if(feed.ml) parts.push('🍼 '+feed.ml+'ml');
       if(feed.puree_g) parts.push('🥣 '+feed.puree_g+'g');
-      if(feed.foods?.length) {
+      if(feed.foods?.length){
         const names = feed.foods.slice(0,3).map(id => {
           for(const cat of FOOD_CATEGORIES){ const item = cat.items.find(i=>i.id===id); if(item) return item.name.split(' ')[0]; }
           return id;
         });
-        parts.push(names.join(', ')+(feed.foods.length>3?' +'+( feed.foods.length-3):''));
+        parts.push(names.join(', ')+(feed.foods.length>3?' +'+(feed.foods.length-3):''));
       }
       if(feed.vit_d) parts.push('☀️');
       if(feed.flat) parts.push('💨');
       detail = (feed.time ? feed.time+' · ' : '') + parts.join(' · ');
     }
-    return `<div class="meal-card ${logged?'logged':''}" onclick="openFeedModal('${meal.id}')"><div class="meal-icon">${meal.icon}</div><div class="meal-info"><div class="meal-name">${meal.name}</div><div class="meal-detail ${logged?'has-data':''}">${detail}</div></div><div class="meal-status">${logged?'✅':'+'}</div></div>`;
-  }).join('');
+    html += `<div class="meal-card ${logged?'logged':''}" onclick="openFeedModal('${meal.id}')"><div class="meal-icon">${meal.icon}</div><div class="meal-info"><div class="meal-name">${meal.name}</div><div class="meal-detail ${logged?'has-data':''}">${detail}</div></div><div class="meal-status">${logged?'✅':'+'}</div></div>`;
+
+    // "+" button after this meal
+    html += `<div class="extra-feed-btn" onclick="openExtraFeedModal('extra_after_${meal.id}')"><div class="extra-feed-btn-inner">+</div></div>`;
+
+    // Extra feeds AFTER this meal
+    const afterExtras = extraFeeds.filter(f => f.meal_id === `extra_after_${meal.id}`);
+    afterExtras.forEach(f => { html += extraFeedCard(f); });
+  });
+
+  el.innerHTML = html;
 }
 
-function openFeedModal(mealId){
-  editingFeedId = mealId;
-  const meal = MEALS.find(m => m.id === mealId);
-  const existing = dayFeeds.find(f => f.meal_id === mealId);
-  document.getElementById('feedModalTitle').textContent = `${meal.icon} ${meal.name}`;
-  document.getElementById('feedTimeInput').value = existing?.time || meal.defaultTime;
+function extraFeedCard(feed){
+  const detail = [
+    feed.ml ? '🍼 '+feed.ml+'ml' : '',
+    feed.vit_d ? '☀️' : '',
+    feed.flat  ? '💨' : '',
+  ].filter(Boolean).join(' · ');
+  return `<div class="meal-card extra-card logged" onclick="openFeedModal('${feed.meal_id}','${feed.id}')">
+    <div class="meal-icon">🍼</div>
+    <div class="meal-info">
+      <div class="meal-name" style="font-size:13px;color:#888">Extra bottle</div>
+      <div class="meal-detail has-data">${feed.time ? feed.time+' · ' : ''}${detail||'–'}</div>
+    </div>
+    <div class="feed-actions">
+      <button class="icon-btn delete" onclick="event.stopPropagation();deleteExtraFeed('${feed.id}')">🗑</button>
+    </div>
+  </div>`;
+}
 
-  // Per-meal rules
-  const isPureeOnly = mealId === 'snack';
-  const hasPuree    = mealId === 'lunch' || mealId === 'snack';
+function openExtraFeedModal(slotId){
+  // slotId = 'extra_after_night' etc.
+  openFeedModal(slotId, null, true);
+}
 
-  // Show/hide meal type buttons
-  document.getElementById('mtBottle').style.display = isPureeOnly ? 'none' : 'flex';
-  document.getElementById('mtPuree').style.display  = hasPuree    ? 'flex' : 'none';
-  document.getElementById('mtBoth').style.display   = (hasPuree && !isPureeOnly) ? 'flex' : 'none';
+async function deleteExtraFeed(feedId){
+  setSyncing(true);
+  await db.from('feeds').delete().eq('id', feedId);
+  const {data} = await db.from('feeds').select('*').eq('date_key', currentDateKey).order('time');
+  dayFeeds = data || [];
+  setSyncing(false);
+  renderDay();
+  showToast('Deleted');
+}
 
-  // Default meal type
-  const defaultType = isPureeOnly ? 'puree' : (existing?.meal_type || 'bottle');
-  toggleMealType(defaultType);
+function openFeedModal(mealId, feedId=null, isExtra=false){
+  editingFeedId = feedId || mealId; // for extras, store the DB id if editing existing
+  // Store slot id separately for new extras
+  window._currentSlotId = mealId;
 
-  // Bottle
+  const isExtraFeed = mealId.startsWith('extra_');
+  const existing = isExtraFeed && feedId
+    ? dayFeeds.find(f => f.id === feedId)
+    : dayFeeds.find(f => f.meal_id === mealId);
+
+  // Title
+  if(isExtraFeed){
+    const afterMealId = mealId.replace('extra_after_','').replace('extra_before_','');
+    const meal = MEALS.find(m => m.id === afterMealId);
+    document.getElementById('feedModalTitle').textContent = `🍼 Extra bottle`;
+  } else {
+    const meal = MEALS.find(m => m.id === mealId);
+    document.getElementById('feedModalTitle').textContent = `${meal.icon} ${meal.name}`;
+  }
+
+  document.getElementById('feedTimeInput').value = existing?.time || '';
+
+  // Extra feeds: bottle only — hide meal type row
+  const mealTypeRow = document.querySelector('.meal-type-row').parentElement;
+  if(isExtraFeed){
+    mealTypeRow.style.display = 'none';
+    toggleMealType('bottle');
+  } else {
+    mealTypeRow.style.display = 'block';
+    const isPureeOnly = mealId === 'snack';
+    const hasPuree    = mealId === 'lunch' || mealId === 'snack';
+    document.getElementById('mtBottle').style.display = isPureeOnly ? 'none' : 'flex';
+    document.getElementById('mtPuree').style.display  = hasPuree    ? 'flex' : 'none';
+    document.getElementById('mtBoth').style.display   = (hasPuree && !isPureeOnly) ? 'flex' : 'none';
+    const defaultType = isPureeOnly ? 'puree' : (existing?.meal_type || 'bottle');
+    toggleMealType(defaultType);
+  }
+
   document.getElementById('mlInput').value = existing?.ml || '';
   document.getElementById('vitDToggle').checked = existing?.vit_d || false;
   document.getElementById('flatToggle').checked = existing?.flat || false;
-
-  // Puree — food categories filter per meal
   document.getElementById('pureeInput').value = existing?.puree_g || '';
-  // lunch: all except fruits à coque; snack: fruits + fruits à coque only
-  const catFilter = mealId === 'lunch'  ? ['legumes','proteines','laitiers']
-                  : mealId === 'snack'  ? ['fruits','fruits_coque']
+
+  const catFilter = mealId === 'lunch' ? ['legumes','proteines','laitiers']
+                  : mealId === 'snack' ? ['fruits','fruits_coque']
                   : null;
   renderFoodSelector(existing?.foods || [], catFilter);
 
@@ -1042,35 +1116,61 @@ function toggleMealType(type){
 
 async function saveFeed(){
   const time = document.getElementById('feedTimeInput').value;
-  const mealId = editingFeedId;
+  const slotId = window._currentSlotId || editingFeedId;
   if(!time){ showToast('Please set a time'); return; }
-  const existing = dayFeeds.find(f => f.meal_id === mealId);
+  closeFeedModal();
+  setSyncing(true);
+
+  const isExtraFeed = slotId?.startsWith('extra_');
   const hasBottle = currentMealType==='bottle'||currentMealType==='both';
   const hasPuree  = currentMealType==='puree' ||currentMealType==='both';
   const mlVal = parseInt(document.getElementById('mlInput').value) || null;
   const pureeVal = parseInt(document.getElementById('pureeInput').value) || null;
-  const payload = {
-    meal_id: mealId, date_key: currentDateKey, time,
-    meal_type: currentMealType,
-    ml:      hasBottle ? mlVal : null,
-    vit_d:   hasBottle ? document.getElementById('vitDToggle').checked : false,
-    flat:    hasBottle ? document.getElementById('flatToggle').checked : false,
-    puree_g: hasPuree  ? pureeVal : null,
-    foods:   hasPuree  ? Array.from(selectedFoods) : [],
-  };
-  if(existing){
-    await db.from('feeds').update(payload).eq('id', existing.id);
+
+  if(isExtraFeed){
+    // For extras: editingFeedId is DB row id if editing, else null
+    const existingExtra = typeof editingFeedId === 'string' && editingFeedId.length > 15
+      ? dayFeeds.find(f => f.id === editingFeedId)
+      : null;
+    const payload = {
+      meal_id: slotId, date_key: currentDateKey, time,
+      meal_type: 'bottle', ml: mlVal,
+      vit_d: document.getElementById('vitDToggle').checked,
+      flat:  document.getElementById('flatToggle').checked,
+      puree_g: null, foods: [],
+    };
+    if(existingExtra){
+      await db.from('feeds').update(payload).eq('id', existingExtra.id);
+    } else {
+      await db.from('feeds').insert({id: Date.now().toString(), ...payload});
+    }
   } else {
-    await db.from('feeds').insert({id: Date.now().toString(), ...payload});
+    const mealId = slotId;
+    const existing = dayFeeds.find(f => f.meal_id === mealId);
+    const payload = {
+      meal_id: mealId, date_key: currentDateKey, time,
+      meal_type: currentMealType,
+      ml:      hasBottle ? mlVal : null,
+      vit_d:   hasBottle ? document.getElementById('vitDToggle').checked : false,
+      flat:    hasBottle ? document.getElementById('flatToggle').checked : false,
+      puree_g: hasPuree  ? pureeVal : null,
+      foods:   hasPuree  ? Array.from(selectedFoods) : [],
+    };
+    if(existing){
+      await db.from('feeds').update(payload).eq('id', existing.id);
+    } else {
+      await db.from('feeds').insert({id: Date.now().toString(), ...payload});
+    }
+    const patch = {};
+    if(payload.vit_d) patch.vit_d_given = true;
+    if(payload.flat)  patch.flat_given  = true;
+    if(Object.keys(patch).length) await upsertDayData(patch);
   }
-  const patch = {};
-  if(payload.vit_d) patch.vit_d_given = true;
-  if(payload.flat)  patch.flat_given  = true;
-  if(Object.keys(patch).length) await upsertDayData(patch);
+
   const {data} = await db.from('feeds').select('*').eq('date_key', currentDateKey).order('time');
   dayFeeds = data || [];
-  setSyncing(false); btn.disabled = false; btn.textContent = 'Save';
-  closeFeedModal(); renderDay(); showToast('Saved ✓');
+  setSyncing(false);
+  renderDay(); showToast('Saved ✓');
 }
 
 function editFeed(id){ openFeedModal(id); }
