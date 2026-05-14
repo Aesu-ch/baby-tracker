@@ -1120,12 +1120,11 @@ function openFeedModal(mealId, feedId=null, isExtra=false){
     toggleMealType('bottle');
   } else {
     mealTypeRow.style.display = 'block';
-    const isPureeOnly = mealId === 'snack';
-    const hasPuree    = mealId === 'lunch' || mealId === 'snack';
-    document.getElementById('mtBottle').style.display = isPureeOnly ? 'none' : 'flex';
-    document.getElementById('mtPuree').style.display  = hasPuree    ? 'flex' : 'none';
-    document.getElementById('mtBoth').style.display   = (hasPuree && !isPureeOnly) ? 'flex' : 'none';
-    const defaultType = isPureeOnly ? 'puree' : (existing?.meal_type || 'bottle');
+    const hasPuree = mealId === 'lunch' || mealId === 'snack';
+    document.getElementById('mtBottle').style.display = 'flex';
+    document.getElementById('mtPuree').style.display  = hasPuree ? 'flex' : 'none';
+    document.getElementById('mtBoth').style.display   = hasPuree ? 'flex' : 'none';
+    const defaultType = existing?.meal_type || (hasPuree ? 'both' : 'bottle');
     toggleMealType(defaultType);
   }
 
@@ -1348,61 +1347,90 @@ function renderBarChart(elId,vals,days,color){
   el.innerHTML=vals.map((v,i)=>{const h=Math.max(4,Math.round((v/max)*70)),d=new Date(days[i]+'T12:00:00');return`<div class="bar-col"><div class="bar-fill" style="height:${h}px;background:${color}"></div><div class="bar-label">${d.toLocaleDateString('en-GB',{weekday:'narrow'})}</div></div>`;}).join('');
 }
 
-// ── WHO GROWTH STANDARDS (Boys) ───────────────────────────────────────────────
-// Source: WHO Child Growth Standards, weight-for-age and length-for-age boys
-// Values at each month: [P3, P15, P50, P85, P97]
-const WHO_WEIGHT_BOYS = {
-  0: [2.5, 2.9, 3.3, 3.9, 4.3],
-  1: [3.4, 3.9, 4.5, 5.1, 5.7],
-  2: [4.4, 4.9, 5.6, 6.3, 7.1],
-  3: [5.0, 5.7, 6.4, 7.2, 8.0],
-  4: [5.6, 6.2, 7.0, 7.8, 8.7],
-  5: [6.0, 6.7, 7.5, 8.4, 9.3],
-  6: [6.4, 7.1, 7.9, 8.8, 9.7],
-  7: [6.7, 7.4, 8.3, 9.2, 10.2],
-  8: [6.9, 7.7, 8.6, 9.6, 10.5],
-  9: [7.1, 7.9, 8.9, 9.9, 10.9],
-  10: [7.4, 8.2, 9.2, 10.2, 11.2],
-  11: [7.6, 8.4, 9.4, 10.5, 11.5],
-  12: [7.7, 8.6, 9.6, 10.8, 11.8],
-};
-const WHO_HEIGHT_BOYS = {
-  0: [46.1, 48.0, 49.9, 51.8, 53.4],
-  1: [50.8, 52.8, 54.7, 56.7, 58.5],
-  2: [54.4, 56.4, 58.4, 60.4, 62.2],
-  3: [57.3, 59.4, 61.4, 63.5, 65.5],
-  4: [59.7, 61.8, 63.9, 66.0, 68.0],
-  5: [61.7, 63.8, 65.9, 68.0, 70.1],
-  6: [63.3, 65.5, 67.6, 69.8, 71.9],
-  7: [64.8, 67.0, 69.2, 71.3, 73.5],
-  8: [66.2, 68.4, 70.6, 72.8, 75.0],
-  9: [67.5, 69.7, 72.0, 74.3, 76.5],
-  10: [68.7, 71.0, 73.3, 75.6, 77.9],
-  11: [69.9, 72.2, 74.5, 76.9, 79.2],
-  12: [71.0, 73.4, 75.7, 78.1, 80.5],
+// ── SWISS/WHO GROWTH STANDARDS (Boys, 0-12 months) ───────────────────────────
+// Swiss 2019 (Eiholzer) = WHO for ages 0-5 years (virtually identical per study)
+// Using official WHO LMS parameters for precise z-score based percentile calculation
+// Source: WHO Child Growth Standards 2006 — wfa and lhfa boys
+
+const WHO_LMS_WEIGHT = {
+  // months: [L, M (median kg), S (CV)]
+  0:  [ 0.3487,  3.3464, 0.14602],
+  1:  [ 0.2297,  4.4709, 0.13395],
+  2:  [ 0.1970,  5.5675, 0.12385],
+  3:  [ 0.1738,  6.3762, 0.11689],
+  4:  [ 0.1553,  7.0008, 0.11321],
+  5:  [ 0.1420,  7.5105, 0.11088],
+  6:  [ 0.1320,  7.9340, 0.10950],
+  7:  [ 0.1247,  8.2970, 0.10918],
+  8:  [ 0.1190,  8.6151, 0.10961],
+  9:  [ 0.1142,  8.9014, 0.11040],
+  10: [ 0.1100,  9.1649, 0.11135],
+  11: [ 0.1065,  9.4122, 0.11232],
+  12: [ 0.1033,  9.6479, 0.11327],
 };
 
-const WHO_PCTS = [3, 15, 50, 85, 97];
+const WHO_LMS_HEIGHT = {
+  // months: [L, M (median cm), S (CV)]
+  0:  [-0.3521, 49.8842, 0.03795],
+  1:  [-0.5893, 54.7244, 0.03557],
+  2:  [-0.4749, 58.4249, 0.03424],
+  3:  [-0.3387, 61.4292, 0.03328],
+  4:  [-0.2241, 63.8860, 0.03257],
+  5:  [-0.1167, 65.9026, 0.03204],
+  6:  [-0.0142, 67.6236, 0.03165],
+  7:  [ 0.0831, 69.1645, 0.03139],
+  8:  [ 0.1762, 70.5994, 0.03124],
+  9:  [ 0.2648, 71.9687, 0.03117],
+  10: [ 0.3491, 73.2812, 0.03118],
+  11: [ 0.4290, 74.5388, 0.03122],
+  12: [ 0.5046, 75.7488, 0.03128],
+};
+
+const REF_ZSCORES = [-1.88, -1.04, 0, 1.04, 1.88]; // P3 P15 P50 P85 P97
+const REF_PCTS    = [3, 15, 50, 85, 97];
+
+function normCDF(z){
+  if(z < 0) return 1 - normCDF(-z);
+  const t = 1/(1 + 0.2316419*z);
+  const p = t*(0.319381530 + t*(-0.356563782 + t*(1.781477937 + t*(-1.821255978 + t*1.330274429))));
+  return 1 - (1/Math.sqrt(2*Math.PI)) * Math.exp(-z*z/2) * p;
+}
+
+function lerpLMS(ageMonths, table){
+  const lo = Math.min(12, Math.max(0, Math.floor(ageMonths)));
+  const hi = Math.min(12, lo + 1);
+  const t = ageMonths - lo;
+  return {
+    L: table[lo][0] + t*(table[hi][0] - table[lo][0]),
+    M: table[lo][1] + t*(table[hi][1] - table[lo][1]),
+    S: table[lo][2] + t*(table[hi][2] - table[lo][2]),
+  };
+}
+
+function whoRefValue(ageMonths, lmsTable, z){
+  const {L, M, S} = lerpLMS(ageMonths, lmsTable);
+  if(Math.abs(L) < 0.001) return M * Math.exp(S * z);
+  return M * Math.pow(1 + L*S*z, 1/L);
+}
 
 function getAgeMonths(dateKey, dob){
   const d = new Date(dateKey+'T12:00:00');
   const b = new Date(dob);
-  return Math.round((d - b) / (30.44 * 24 * 3600 * 1000) * 10) / 10;
+  return (d - b) / (30.4375 * 24 * 3600 * 1000);
 }
 
-function whoPercentile(value, ageMonths, table){
-  const roundedAge = Math.min(12, Math.max(0, Math.round(ageMonths)));
-  const refs = table[roundedAge];
-  if(!refs) return null;
-  if(value <= refs[0]) return '<3';
-  if(value >= refs[4]) return '>97';
-  for(let i=0; i<WHO_PCTS.length-1; i++){
-    if(value >= refs[i] && value <= refs[i+1]){
-      const t = (value - refs[i]) / (refs[i+1] - refs[i]);
-      return Math.round(WHO_PCTS[i] + t * (WHO_PCTS[i+1] - WHO_PCTS[i]));
-    }
+function whoPercentile(value, ageMonths, lmsTable){
+  const {L, M, S} = lerpLMS(ageMonths, lmsTable);
+  let z;
+  if(Math.abs(L) < 0.001){
+    z = Math.log(value/M) / S;
+  } else {
+    z = (Math.pow(value/M, L) - 1) / (L * S);
   }
-  return 50;
+  const pct = normCDF(z) * 100;
+  if(pct < 1)  return '<1';
+  if(pct > 99) return '>99';
+  return Math.round(pct);
 }
 
 function renderGrowth(){
@@ -1419,29 +1447,29 @@ function renderGrowth(){
     // Weight
     if(latest.weight){
       document.getElementById('latestWeightVal').textContent = latest.weight;
-      const wp = whoPercentile(parseFloat(latest.weight), ageM, WHO_WEIGHT_BOYS);
+      const wp = whoPercentile(parseFloat(latest.weight), ageM, WHO_LMS_WEIGHT);
       document.getElementById('weightPercentileBadge').innerHTML =
         `<span class="pct-val">${wp}<span style="font-size:14px">th</span></span><span class="pct-label">weight</span>`;
     }
     // Height
     if(latest.height){
       document.getElementById('latestHeightVal').textContent = latest.height;
-      const hp = whoPercentile(parseFloat(latest.height), ageM, WHO_HEIGHT_BOYS);
+      const hp = whoPercentile(parseFloat(latest.height), ageM, WHO_LMS_HEIGHT);
       document.getElementById('heightPercentileBadge').innerHTML =
         `<span class="pct-val">${hp}<span style="font-size:14px">th</span></span><span class="pct-label">height</span>`;
     }
   }
 
-  renderGrowthChart('weightChart', allGrowth, 'weight', '#F2A97E', WHO_WEIGHT_BOYS, 'kg');
-  renderGrowthChart('heightChart', allGrowth, 'height', '#A8C8E8', WHO_HEIGHT_BOYS, 'cm');
+  renderGrowthChart('weightChart', allGrowth, 'weight', '#F2A97E', WHO_LMS_WEIGHT, 'kg');
+  renderGrowthChart('heightChart', allGrowth, 'height', '#A8C8E8', WHO_LMS_HEIGHT, 'cm');
 
   const el = document.getElementById('growthHistory');
   if(!allGrowth.length){ el.innerHTML='<div style="color:#bbb;font-size:13px;text-align:center;padding:10px">No measurements yet</div>'; return; }
   const dob = appSettings.dob || '2026-01-06';
   el.innerHTML = [...allGrowth].reverse().map(m => {
     const ageM = getAgeMonths(m.date_key, dob);
-    const wp = m.weight ? whoPercentile(parseFloat(m.weight), ageM, WHO_WEIGHT_BOYS) : null;
-    const hp = m.height ? whoPercentile(parseFloat(m.height), ageM, WHO_HEIGHT_BOYS) : null;
+    const wp = m.weight ? whoPercentile(parseFloat(m.weight), ageM, WHO_LMS_WEIGHT) : null;
+    const hp = m.height ? whoPercentile(parseFloat(m.height), ageM, WHO_LMS_HEIGHT) : null;
     return `<div class="history-row">
       <div class="history-type">📅</div>
       <div class="history-detail">
@@ -1454,7 +1482,7 @@ function renderGrowth(){
   }).join('');
 }
 
-function renderGrowthChart(elId, measurements, field, color, whoTable, unit){
+function renderGrowthChart(elId, measurements, field, color, lmsTable, unit){
   const el = document.getElementById(elId);
   const vals = measurements.filter(m => m[field] && m.date_key).map(m => ({
     dateKey: m.date_key,
@@ -1466,50 +1494,47 @@ function renderGrowthChart(elId, measurements, field, color, whoTable, unit){
   const W = 300, H = 130, padL = 28, padB = 18, padT = 8, padR = 8;
   const cW = W - padL - padR, cH = H - padB - padT;
 
-  // Age range: 0 to max(12, latest age+1) months
   const ages = vals.map(v => getAgeMonths(v.dateKey, dob));
   const maxAge = Math.max(12, Math.ceil(Math.max(...ages)));
   const minAge = 0;
 
-  // Value range from WHO + data
+  // Reference ages for drawing curves (smooth, every 0.5 months)
+  const refAges = [];
+  for(let a = 0; a <= Math.min(12, maxAge); a += 0.5) refAges.push(a);
+
+  // Value range from P3-P97 across the chart + data
   const allVals = vals.map(v => v.v);
-  const whoMin = Math.min(...Object.values(whoTable).map(r => r[0]));
-  const whoMax = Math.max(...Object.values(whoTable).map(r => r[4]));
-  const dataMin = Math.min(...allVals);
-  const dataMax = Math.max(...allVals);
-  const vMin = Math.floor(Math.min(whoMin, dataMin) * 0.98);
-  const vMax = Math.ceil(Math.max(whoMax, dataMax) * 1.02);
+  const whoMin = whoRefValue(0, lmsTable, REF_ZSCORES[0]);
+  const whoMax = whoRefValue(Math.min(12,maxAge), lmsTable, REF_ZSCORES[4]);
+  const vMin = Math.floor(Math.min(whoMin, Math.min(...allVals)) * 0.98);
+  const vMax = Math.ceil(Math.max(whoMax, Math.max(...allVals)) * 1.02);
   const vRange = vMax - vMin;
 
   const xScale = a => padL + ((a - minAge) / (maxAge - minAge)) * cW;
   const yScale = v => padT + cH - ((v - vMin) / vRange) * cH;
 
-  // WHO reference curves
-  const whoAges = Object.keys(whoTable).map(Number).sort((a,b)=>a-b);
-
   let svg = `<svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible">`;
 
-  // WHO band P15-P85 (shaded)
-  const bandTop = whoAges.map(a => `${xScale(a)},${yScale(whoTable[a][3])}`).join(' ');
-  const bandBot = [...whoAges].reverse().map(a => `${xScale(a)},${yScale(whoTable[a][1])}`).join(' ');
+  // Shaded band P15–P85
+  const bandTop = refAges.map(a => `${xScale(a)},${yScale(whoRefValue(a, lmsTable, REF_ZSCORES[3]))}`).join(' ');
+  const bandBot = [...refAges].reverse().map(a => `${xScale(a)},${yScale(whoRefValue(a, lmsTable, REF_ZSCORES[1]))}`).join(' ');
   svg += `<polygon points="${bandTop} ${bandBot}" fill="${color}" opacity="0.12"/>`;
 
-  // WHO P3, P50, P97 lines
-  const lineStyles = [[0,'#ccc',1,'P3'],[2,color,1.5,'P50'],[4,'#ccc',1,'P97']];
-  lineStyles.forEach(([idx, stroke, sw, label]) => {
-    const pts = whoAges.map(a => `${xScale(a)},${yScale(whoTable[a][idx])}`).join(' ');
-    svg += `<polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-dasharray="${idx===2?'none':'4,3'}" opacity="0.6"/>`;
+  // P3, P50, P97 reference lines
+  [[0,'#ccc',1,'P3'],[2,color,1.5,'P50'],[4,'#ccc',1,'P97']].forEach(([zi, stroke, sw, label]) => {
+    const pts = refAges.map(a => `${xScale(a)},${yScale(whoRefValue(a, lmsTable, REF_ZSCORES[zi]))}`).join(' ');
+    svg += `<polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-dasharray="${zi===2?'none':'4,3'}" opacity="0.7"/>`;
   });
 
-  // P50 label
-  const lastAge = whoAges[whoAges.length-1];
-  svg += `<text x="${xScale(lastAge)+3}" y="${yScale(whoTable[lastAge][2])+4}" font-size="8" fill="${color}" opacity="0.8">P50</text>`;
+  // P50 end label
+  const lastRefAge = refAges[refAges.length-1];
+  svg += `<text x="${xScale(lastRefAge)+3}" y="${yScale(whoRefValue(lastRefAge, lmsTable, 0))+4}" font-size="8" fill="${color}" opacity="0.8">P50</text>`;
 
-  // Baby's actual data line
+  // Baby's line
   const babyPts = ages.map((a,i) => `${xScale(a)},${yScale(vals[i].v)}`).join(' ');
   if(ages.length > 1) svg += `<polyline points="${babyPts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
 
-  // Dots for each measurement
+  // Dots + value labels
   ages.forEach((a,i) => {
     svg += `<circle cx="${xScale(a)}" cy="${yScale(vals[i].v)}" r="5" fill="${color}" stroke="white" stroke-width="1.5"/>`;
     svg += `<text x="${xScale(a)}" y="${yScale(vals[i].v)-8}" font-size="8" fill="${color}" text-anchor="middle" font-weight="600">${vals[i].v}${unit}</text>`;
