@@ -123,15 +123,17 @@
   .food-week-chips{display:flex;flex-wrap:wrap;gap:6px;}
   .food-week-chip{background:var(--cream);border:1.5px solid var(--warm-sand);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--deep);}
   .food-week-chip.allergen{border-color:var(--gold);}
-  .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:12px;}
-  .day-col{background:white;border-radius:10px;padding:8px 5px;box-shadow:0 2px 6px var(--shadow);min-height:120px;display:flex;flex-direction:column;}
+  .week-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+  .day-col{background:white;border-radius:12px;padding:12px 14px;box-shadow:0 2px 6px var(--shadow);display:flex;align-items:flex-start;gap:12px;}
   .day-col.today-col{border:2px solid var(--terra);}
-  .day-col-header{font-size:10px;font-weight:700;color:var(--deep);text-align:center;text-transform:uppercase;letter-spacing:0.3px;}
-  .day-col-date{font-size:9px;color:#aaa;text-align:center;margin-bottom:5px;}
-  .day-flags{display:flex;justify-content:center;gap:2px;margin-bottom:4px;flex-wrap:wrap;}
-  .day-flag{font-size:11px;line-height:1;}
-  .day-food-item{font-size:9px;color:#666;line-height:1.5;text-align:center;}
-  .day-empty{font-size:9px;color:#ddd;text-align:center;margin-top:8px;}
+  .day-col-left{flex-shrink:0;width:38px;text-align:center;}
+  .day-col-header{font-size:11px;font-weight:700;color:var(--deep);text-transform:uppercase;letter-spacing:0.3px;}
+  .day-col-date{font-size:12px;color:#aaa;}
+  .day-col-right{flex:1;}
+  .day-flags{display:flex;gap:4px;margin-bottom:4px;flex-wrap:wrap;}
+  .day-flag{font-size:14px;line-height:1;}
+  .day-food-item{font-size:12px;color:#666;line-height:1.6;}
+  .summary-legend{display:flex;flex-wrap:wrap;gap:8px 14px;padding:10px 14px;background:var(--cream);border-radius:10px;font-size:11px;color:#888;margin-top:4px;}
 
   .analysis-card{background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 12px var(--shadow);}
   .analysis-title{font-family:'DM Serif Display',serif;font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
@@ -1348,32 +1350,33 @@ async function renderAnalysis(){
     all.map((d, i) => {
       const isToday = d.key === todayKey;
       const dateNum = new Date(d.key+'T12:00:00').getDate();
-
-      // Flags
-      const flags = [];
-      if(d.day.vit_d_given) flags.push('<span title="Vit D">☀️</span>');
-      if(d.day.poop_today)  flags.push('<span title="Poop">💩</span>');
-      if(d.day.flat_given)  flags.push('<span title="Flatulex">💊</span>');
-
-      // Foods this day
-      const dayFoods = new Set();
-      d.feeds.forEach(f => (f.foods||[]).forEach(id => dayFoods.add(id)));
-      const foodNames = [...dayFoods].map(id => {
-        const info = foodIdToName(id);
-        return info ? info.name.split(' ')[0] : null;
-      }).filter(Boolean);
+      const wakeups = d.day.night_wakeups;
+      const wakeupStr = wakeups === 0 ? '😴' : wakeups != null ? `🌙×${wakeups}` : null;
 
       return `<div class="day-col ${isToday?'today-col':''}">
-        <div class="day-col-header">${DAY_LABELS[i]}</div>
-        <div class="day-col-date">${dateNum}</div>
-        <div class="day-flags">${flags.join('')||'<span style="color:#eee;font-size:11px">·</span>'}</div>
-        ${foodNames.length
-          ? foodNames.map(n => `<div class="day-food-item">${n}</div>`).join('')
-          : `<div class="day-empty">–</div>`
-        }
+        <div class="day-col-left">
+          <div class="day-col-header">${DAY_LABELS[i]}</div>
+          <div class="day-col-date">${dateNum}</div>
+        </div>
+        <div class="day-col-right">
+          <div class="day-flags">
+            ${d.day.vit_d_given ? '<span title="Vit D">💧</span>' : ''}
+            ${d.day.poop_today  ? '<span title="Poop">💩</span>' : ''}
+            ${d.day.flat_given  ? '<span title="Flatulex">💨</span>' : ''}
+            ${wakeupStr         ? `<span title="Wakeups">${wakeupStr}</span>` : ''}
+            ${!d.day.vit_d_given && !d.day.poop_today && !d.day.flat_given && !wakeupStr ? '<span style="color:#ddd;font-size:12px">–</span>' : ''}
+          </div>
+        </div>
       </div>`;
     }).join('')
-  }</div>`;
+  }</div>
+  <div class="summary-legend">
+    <span>💧 Vit D</span>
+    <span>💩 Poop</span>
+    <span>💨 Flatulex</span>
+    <span>😴 Full night</span>
+    <span>🌙×n Wakeups</span>
+  </div>`;
 }
 
 function todayKey_fn(){
