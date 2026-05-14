@@ -443,8 +443,20 @@
   <div class="section">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div class="section-title" style="margin-bottom:0">📅 Weekly Summary</div>
-      <div style="font-size:12px;color:#aaa" id="weekLabel"></div>
     </div>
+    <!-- Week navigation -->
+    <div class="date-nav" style="margin-bottom:14px;background:var(--soft-peach);border-radius:12px;padding:8px 12px">
+      <button class="date-btn" style="background:rgba(61,35,20,0.1);color:var(--deep)" onclick="changeWeek(-1)">‹</button>
+      <div class="date-label" style="color:var(--deep);font-size:13px" id="weekLabel"></div>
+      <button class="date-btn" style="background:rgba(61,35,20,0.1);color:var(--deep)" onclick="changeWeek(1)" id="weekNextBtn">›</button>
+      <button class="today-btn" style="background:var(--terra);color:white" onclick="goCurrentWeek()">Now</button>
+    </div>
+    <!-- Foods this week -->
+    <div class="summary-card" style="margin-bottom:12px">
+      <div class="summary-card-title">🥦 Foods this week</div>
+      <div id="weeklyFoodList"><div style="color:#bbb;font-size:13px">Loading…</div></div>
+    </div>
+    <!-- 7-day grid -->
     <div id="weeklyGrid"></div>
   </div>
 </div>
@@ -1267,12 +1279,14 @@ function closeFab(){}
 function getLast7Days(){const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);}return days;}
 
 // ── WEEKLY SUMMARY ────────────────────────────────────────────────────────────
-function getCurrentWeekDays(){
-  // Mon–Sun of current week
+// ── WEEKLY SUMMARY ────────────────────────────────────────────────────────────
+let currentWeekOffset = 0; // 0 = current week, -1 = last week, etc.
+
+function getWeekDays(offset = 0){
   const today = new Date();
-  const day = today.getDay(); // 0=Sun
+  const day = today.getDay();
   const monday = new Date(today);
-  monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+  monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
   monday.setHours(0,0,0,0);
   const days = [];
   for(let i = 0; i < 7; i++){
@@ -1281,6 +1295,20 @@ function getCurrentWeekDays(){
     days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
   }
   return days;
+}
+
+function changeWeek(delta){
+  currentWeekOffset += delta;
+  // Can't go into the future
+  if(currentWeekOffset > 0) currentWeekOffset = 0;
+  document.getElementById('weekNextBtn').style.opacity = currentWeekOffset === 0 ? '0.3' : '1';
+  renderAnalysis();
+}
+
+function goCurrentWeek(){
+  currentWeekOffset = 0;
+  document.getElementById('weekNextBtn').style.opacity = '0.3';
+  renderAnalysis();
 }
 
 function foodIdToName(id){
@@ -1292,16 +1320,20 @@ function foodIdToName(id){
 }
 
 async function renderAnalysis(){
-  const days = getCurrentWeekDays();
+  const days = getWeekDays(currentWeekOffset);
   const todayKey = todayKey_fn();
+
+  // Disable next button if current week
+  document.getElementById('weekNextBtn').style.opacity = currentWeekOffset === 0 ? '0.3' : '1';
 
   // Week label
   const mon = new Date(days[0]+'T12:00:00');
   const sun = new Date(days[6]+'T12:00:00');
   const fmt = d => d.toLocaleDateString('fr-CH',{day:'numeric',month:'short'});
-  document.getElementById('weekLabel').textContent = `${fmt(mon)} – ${fmt(sun)}`;
+  const isCurrent = currentWeekOffset === 0;
+  document.getElementById('weekLabel').textContent = isCurrent ? `Cette semaine · ${fmt(mon)} – ${fmt(sun)}` : `${fmt(mon)} – ${fmt(sun)}`;
 
-  // Fetch all data for the week
+  // Fetch all data
   const results = await Promise.all(days.map(k => Promise.all([
     db.from('feeds').select('*').eq('date_key', k),
     db.from('day_data').select('*').eq('date_key', k).single()
@@ -1312,7 +1344,25 @@ async function renderAnalysis(){
     day: d.data || {},
   }));
 
-  // 7-day grid
+  // Collect all unique foods this week
+  const weekFoods = new Map();
+  all.forEach(d => d.feeds.forEach(f => (f.foods||[]).forEach(id => {
+    if(!weekFoods.has(id)){ const info = foodIdToName(id); if(info) weekFoods.set(id, info); }
+  })));
+
+  // Food list
+  const foodListEl = document.getElementById('weeklyFoodList');
+  if(weekFoods.size === 0){
+    foodListEl.innerHTML = '<div style="color:#bbb;font-size:13px">Aucune purée cette semaine</div>';
+  } else {
+    foodListEl.innerHTML = `<div class="food-week-chips">${
+      [...weekFoods.values()].map(f =>
+        `<span class="food-week-chip ${f.allergen?'allergen':''}">${f.name}${f.allergen?' <span style="font-size:8px;font-weight:700;color:#8a6000">A</span>':''}</span>`
+      ).join('')
+    }</div>`;
+  }
+
+  // 7-day grid (vertical)
   const DAY_LABELS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
   const gridEl = document.getElementById('weeklyGrid');
   gridEl.innerHTML = `<div class="week-grid">${
@@ -1321,14 +1371,7 @@ async function renderAnalysis(){
       const dateNum = new Date(d.key+'T12:00:00').getDate();
       const wakeups = d.day.night_wakeups;
       const wakeupStr = wakeups === 0 ? '😴' : wakeups != null ? `🌙×${wakeups}` : null;
-
-      // Foods this day
-      const dayFoods = new Set();
-      d.feeds.forEach(f => (f.foods||[]).forEach(id => dayFoods.add(id)));
-      const foodNames = [...dayFoods].map(id => {
-        const info = foodIdToName(id);
-        return info ? info.name : null;
-      }).filter(Boolean);
+      const noFlags = !d.day.vit_d_given && !d.day.poop_today && !d.day.flat_given && !wakeupStr;
 
       return `<div class="day-col ${isToday?'today-col':''}">
         <div class="day-col-left">
@@ -1337,13 +1380,12 @@ async function renderAnalysis(){
         </div>
         <div class="day-col-right">
           <div class="day-flags">
-            ${d.day.vit_d_given ? '<span title="Vit D">💧</span>' : ''}
-            ${d.day.poop_today  ? '<span title="Poop">💩</span>' : ''}
-            ${d.day.flat_given  ? '<span title="Flatulex">💨</span>' : ''}
-            ${wakeupStr         ? `<span title="Wakeups">${wakeupStr}</span>` : ''}
-            ${!d.day.vit_d_given && !d.day.poop_today && !d.day.flat_given && !wakeupStr ? '<span style="color:#ddd;font-size:12px">–</span>' : ''}
+            ${d.day.vit_d_given ? '<span>💧</span>' : ''}
+            ${d.day.poop_today  ? '<span>💩</span>' : ''}
+            ${d.day.flat_given  ? '<span>💨</span>' : ''}
+            ${wakeupStr         ? `<span>${wakeupStr}</span>` : ''}
+            ${noFlags           ? '<span style="color:#ddd;font-size:12px">–</span>' : ''}
           </div>
-          ${foodNames.length ? `<div class="day-food-item">${foodNames.join(', ')}</div>` : ''}
         </div>
       </div>`;
     }).join('')
