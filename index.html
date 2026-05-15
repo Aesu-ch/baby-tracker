@@ -1271,6 +1271,16 @@ async function setNightWakeups(val){
   renderDay();
 }
 
+async function upsertDayData(patch){
+  setSyncing(true);
+  const u={date_key:currentDateKey,...dayData,...patch,updated_at:new Date().toISOString()};
+  delete u.id;
+  const{data,error}=await db.from('day_data').upsert(u,{onConflict:'date_key'}).select().single();
+  if(error){ console.error('upsertDayData error:',error); showToast('⚠️ Save error: '+error.message); }
+  if(data)dayData=data;
+  setSyncing(false);
+}
+
 function renderWakeupSelector(val){
   const btns=document.querySelectorAll('.wakeup-btn');
   btns.forEach((b,i)=>b.classList.toggle('active',i===val));
