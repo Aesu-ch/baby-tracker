@@ -2333,14 +2333,40 @@ async function deleteVisit(id){
 }
 
 // ── FOOD LIST PAGE ────────────────────────────────────────────────────────────
+// ── FOOD RATINGS ─────────────────────────────────────────────────────────────
+let foodRatings = {}; // id → 1-5
+
+async function loadFoodRatings(){
+  const { data } = await db.from('food_ratings').select('*');
+  foodRatings = {};
+  (data || []).forEach(r => { foodRatings[r.food_id] = r.rating; });
+}
+
+async function setFoodRating(foodId, rating){
+  // Toggle off if same rating clicked
+  const current = foodRatings[foodId];
+  const newRating = current === rating ? null : rating;
+  if(newRating === null){
+    delete foodRatings[foodId];
+    await db.from('food_ratings').delete().eq('food_id', foodId);
+  } else {
+    foodRatings[foodId] = newRating;
+    await db.from('food_ratings').upsert({food_id: foodId, rating: newRating},{onConflict:'food_id'});
+  }
+  renderFoodListPage();
+}
+
 async function renderFoodListPage(){
   const el = document.getElementById('foodListContent');
   el.innerHTML = '<div style="color:#bbb;font-size:13px;text-align:center;padding:20px">Loading…</div>';
 
-  // Fetch ALL feeds ever logged to build set of tried foods
-  const { data: allFeeds } = await db.from('feeds').select('foods').not('foods','is',null);
+  const [feedsRes] = await Promise.all([
+    db.from('feeds').select('foods').not('foods','is',null),
+    loadFoodRatings(),
+  ]);
+
   const triedFoods = new Set();
-  (allFeeds || []).forEach(f => {
+  (feedsRes.data || []).forEach(f => {
     if(Array.isArray(f.foods)) f.foods.forEach(id => triedFoods.add(id));
   });
 
@@ -2372,10 +2398,15 @@ async function renderFoodListPage(){
         <div style="display:flex;flex-direction:column;gap:0">
           ${cat.items.map(item => {
             const tried = triedFoods.has(item.id);
+            const rating = foodRatings[item.id] || 0;
+            const stars = tried ? [1,2,3,4,5].map(n =>
+              `<span onclick="setFoodRating('${item.id}',${n})" style="cursor:pointer;font-size:16px;line-height:1;color:${n<=rating?'#f5a623':'#ddd'}">${n<=rating?'★':'☆'}</span>`
+            ).join('') : `<span style="font-size:11px;color:#ddd">not tried</span>`;
             return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--cream);">
-              <div style="width:22px;height:22px;border-radius:6px;border:2px solid ${tried?cat.color:' var(--warm-sand)'};background:${tried?cat.color:'transparent'};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;color:white">${tried?'✓':''}</div>
-              <span style="font-size:13px;color:${tried?'var(--deep)':'#aaa'};font-weight:${tried?'500':'400'}">${item.name}</span>
-              ${item.allergen?'<span style="font-size:9px;background:var(--gold);color:#5a4200;border-radius:6px;padding:1px 5px;font-weight:700;margin-left:auto;flex-shrink:0">A</span>':''}
+              <div style="width:22px;height:22px;border-radius:6px;border:2px solid ${tried?cat.color:'var(--warm-sand)'};background:${tried?cat.color:'transparent'};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;color:white">${tried?'✓':''}</div>
+              <span style="font-size:13px;color:${tried?'var(--deep)':'#aaa'};font-weight:${tried?'500':'400'};flex:1">${item.name}</span>
+              ${item.allergen?'<span style="font-size:9px;background:var(--gold);color:#5a4200;border-radius:6px;padding:1px 5px;font-weight:700;flex-shrink:0">A</span>':''}
+              <div style="display:flex;gap:1px;flex-shrink:0">${stars}</div>
             </div>`;
           }).join('')}
         </div>
