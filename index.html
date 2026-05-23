@@ -452,11 +452,6 @@
         <button class="diaper-btn" onclick="changeDiapers(1)">+</button>
       </div>
     </div>
-    <!-- Night sleep summary pulled from sleep tab -->
-    <div id="nightSleepSummary" style="display:none;background:linear-gradient(135deg,var(--sky-light),var(--sage-light));border-radius:14px;padding:12px 16px;margin-bottom:12px;align-items:center;justify-content:space-between">
-      <div><div style="font-size:11px;color:#666;font-weight:500">Last night</div><div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--deep)" id="nightSleepSummaryVal">–</div></div>
-      <div style="font-size:24px;opacity:0.6">🌙</div>
-    </div>
   </div>
   <div class="section" style="padding-top:12px">
     <div class="section-title">🍽️ Feeds</div>
@@ -493,12 +488,17 @@
       <div id="napTimerMode">
         <div class="nap-timer-display" id="napTimerDisplay">00:00</div>
         <div style="font-size:12px;color:#aaa;margin-bottom:12px;text-align:center" id="napTimerStatus">Tap to start timer</div>
+        <!-- Optional custom start time -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;justify-content:center">
+          <label style="font-size:12px;color:#999;font-weight:500">Started at:</label>
+          <input class="form-input" type="time" id="napTimerStartOverride" style="width:110px;padding:6px 10px;font-size:14px;text-align:center">
+        </div>
         <div style="display:flex;gap:8px">
           <button class="save-btn" id="napTimerBtn" onclick="toggleNapTimer()" style="margin-top:0">▶ Start</button>
           <button id="napCancelBtn" onclick="cancelNapTimer()" style="display:none;flex:0.4;background:var(--cream);border:1.5px solid var(--warm-sand);border-radius:14px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;color:#888">✕</button>
         </div>
       </div>
-      <div style="text-align:center;margin:10px 0;font-size:12px;color:#bbb">— or set manually —</div>
+      <div style="text-align:center;margin:10px 0;font-size:12px;color:#bbb">— or log a completed nap —</div>
       <!-- Manual mode -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
         <div><label class="form-label">Start</label><input class="form-input" type="time" id="napManualStart"></div>
@@ -1530,7 +1530,7 @@ async function renderAnalysis(){
     if(d.day.poop_today)  tags.push(`<span class="sum-tag sum-tag-brown">💩 Poop</span>`);
     if(d.day.flat_given)  tags.push(`<span class="tag tag-flat">Flatulex</span>`);
     if(d.ns?.bedtime && d.ns?.wake_time && wakeupCount===0) tags.push(`<span class="sum-tag sum-tag-purple">Full night</span>`);
-    else if(wakeupCount>0) tags.push(`<span class="sum-tag sum-tag-purple">${wakeupCount}× wakeup${wakeupCount>1?'s':''}</span>`);
+    else if(d.ns?.bedtime && d.ns?.wake_time && wakeupCount>0) tags.push(`<span class="sum-tag sum-tag-purple">${wakeupCount}× wakeup${wakeupCount>1?'s':''}</span>`);
 
     // Snack: fruits from snack feed
     const snackFeed = d.feeds.find(f => f.meal_id === 'snack');
@@ -2639,16 +2639,34 @@ function toggleNapTimer(){
 }
 function startNapTimer(){
   napTimerRunning = true;
-  napTimerStart = Date.now();
+  // Check if user set a custom start time
+  const overrideVal = document.getElementById('napTimerStartOverride').value;
+  if(overrideVal){
+    // Parse the override time and compute how far back that was
+    const [h, m] = overrideVal.split(':').map(Number);
+    const now = new Date();
+    const startDate = new Date(now);
+    startDate.setHours(h, m, 0, 0);
+    // If the time is in the future (e.g. 23:30 when it's 00:10), go to previous day
+    if(startDate > now) startDate.setDate(startDate.getDate() - 1);
+    napTimerStart = startDate.getTime();
+  } else {
+    napTimerStart = Date.now();
+  }
   const btn = document.getElementById('napTimerBtn');
   btn.textContent = '⏹ Stop';
   btn.style.background = 'linear-gradient(135deg,var(--sage),#6a9f6a)';
   document.getElementById('napCancelBtn').style.display = 'block';
+  document.getElementById('napTimerStartOverride').disabled = true;
   document.getElementById('napTimerStatus').textContent = 'Nap in progress…';
   napTimerInterval = setInterval(()=>{
-    const e = Math.floor((Date.now()-napTimerStart)/1000);
-    document.getElementById('napTimerDisplay').textContent =
-      `${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`;
+    const e = Math.floor((Date.now() - napTimerStart) / 1000);
+    const h = Math.floor(e / 3600);
+    const m = Math.floor((e % 3600) / 60);
+    const s = e % 60;
+    document.getElementById('napTimerDisplay').textContent = h > 0
+      ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+      : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   }, 1000);
 }
 async function stopNapTimer(){
@@ -2669,6 +2687,8 @@ function resetNapTimer(){
   document.getElementById('napCancelBtn').style.display = 'none';
   document.getElementById('napTimerDisplay').textContent = '00:00';
   document.getElementById('napTimerStatus').textContent = 'Tap to start timer';
+  document.getElementById('napTimerStartOverride').value = '';
+  document.getElementById('napTimerStartOverride').disabled = false;
 }
 async function saveManualNap(){
   const s = document.getElementById('napManualStart').value;
